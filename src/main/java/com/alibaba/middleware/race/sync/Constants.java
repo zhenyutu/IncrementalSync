@@ -8,17 +8,17 @@ interface Constants {
     // ------------ 本地测试可以使用自己的路径--------------//
 
     // 工作主目录
-    String TESTER_HOME = "/Users/wanshao/work/middlewareTester";
+    String TESTER_HOME = "/home/tuzhenyu/work/middlewareTester";
     // 赛题数据
-    String DATA_HOME = "/Users/wanshao/work/canal_data";
+    String DATA_HOME = "/home/tuzhenyu/work/canal_data";
     // 结果文件目录
-    String RESULT_HOME = "/Users/wanshao/work/middlewareTester/user_result";
+    String RESULT_HOME = "/home/tuzhenyu/work/middlewareTester/user_result";
     // teamCode
-    String TEAMCODE = "wanshao_test";
+    String TEAMCODE = "tuzhenyu_test";
     // 日志级别
     String LOG_LEVEL = "INFO";
     // 中间结果目录
-    String MIDDLE_HOME = "/Users/wanshao/work/middlewareTester/middle";
+    String MIDDLE_HOME = "/home/tuzhenyu/work/middlewareTester/middle";
     // server端口
     Integer SERVER_PORT = 5527;
 

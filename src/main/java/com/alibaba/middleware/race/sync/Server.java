@@ -41,8 +41,10 @@ public class Server {
     public static void main(String[] args) throws InterruptedException {
         initProperties();
 
-        schema = args[0];
-        JSONObject jsonObject = JSONObject.parseObject(args[1]);
+//        schema = args[0];
+//        JSONObject jsonObject = JSONObject.parseObject(args[1]);
+        schema = "middleware" ;
+        JSONObject jsonObject = JSONObject.parseObject("{\"student\":\"2\",\"teacher\":\"1\"}");
         tableNamePkMap = JSONObject.parseObject(jsonObject.toJSONString());
 
         Logger logger = LoggerFactory.getLogger(Client.class);
