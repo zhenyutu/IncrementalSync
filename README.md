@@ -42,7 +42,7 @@ d. 列信息
   
 
 e. 列值
- * 主要分为变更前和变更后,<NULL>代表物理值为NULL(空值),(可不考虑字符串本身为"<NULL>"的特殊情况)
+ * 主要分为变更前和变更后,NULL代表物理值为NULL(空值),(可不考虑字符串本身为"NULL"的特殊情况)
  * insert变更,只有变更后列值,其变更前列值为<NULL>,会包含所有的列信息
  * upadate变更,都会有变更前和后的列值,会包含主键和发生变更列的信息(未发生变更过的列不会给出,不是全列信息)
  * delete变革,只有变更前列值,会包含所有的列信息
@@ -51,7 +51,7 @@ e. 列值
  
 
 实际例子:
- * 000001:106|1489133349000|test|user|I|id:1:1|<NULL>|102|name:2:0|<NULL>|ljh|score:1:0|<NULL>|98|
+ * 000001:106|1489133349000|test|user|I|id:1:1|NULL|102|name:2:0|NULL|ljh|score:1:0|<NULL>|98|
  * 000001:106|1489133349000|test|user|U|id:1:1|102|102|score:1:0|98|95|  //执行了变更update score=95 where id=102
 
 
@@ -80,7 +80,7 @@ JAVA
 
 在结果校验100%正确的前提下，按照总耗时进行排名，耗时越少排名越靠前，时间精确到毫秒。
 
-# ================================================== 如何模拟赛题数据  ====================================================
+# ================================ 如何模拟赛题数据  ===================================
 
 1. 从阿里云代码仓库下载[canal(复赛模拟数据版)](https://code.aliyun.com/wanshao/canal.git)。canal是一款开源的mysql实时数据解析工具，在github的地址为[canal(开源版)](https://github.com/alibaba/canal)
 2. 自己安装好mysql，并且建好相关的schema和table
@@ -91,9 +91,10 @@ JAVA
 PS：
 1. 修改默认路径请更改AbstractCanalClientTest.storeChangeToDisk()方法
 2. canal中转化数据的代码请看：analyseEntryAndFlushToFile()方法
+3. canal中解析生成赛题数据时，现在只有int类型换解析成"数字类型"，其他的类型都会解析成"字符串类型"
 
 
-# ========================================== 评测程序如何工作 ==============================================================
+# ========================= 评测程序如何工作 ============================================
 概要说明：评测程序也分为Server和Client，请留意
 
 1. 从天池拉取选手git地址
@@ -105,7 +106,7 @@ PS：
 
 ```
 # 启动选手server，并且传入相关
-java $JAVA_OPS -cp $jarPath com.alibaba.middleware.race.sync.Server $schema $TableNamePkJson
+java $JAVA_OPS -cp $jarPath com.alibaba.middleware.race.sync.Server $schema $tableName $start $end
 # 启动选手client
 java $JAVA_OPS -cp $jarPath com.alibaba.middleware.race.sync.Client
 ```
@@ -120,7 +121,7 @@ java $JAVA_OPS -cp $jarPath com.alibaba.middleware.race.sync.Client
 1. 选手的server端程序由server端的评测程序来kill
 2. client端的评测程序需要选手自己控制在得到最终结果后停止，否则会有超时问题
 
-# ==================================================== 如何获取评测日志 ===================================================
+# ============================= 如何获取评测日志 ===================================
 1. 超时时间： server端不做超时处理，client端超时时间为10分钟
 2. 日志处理：
     - 请将日志写入指定的日志目录：/home/admin/logs/${teamCode}/，这里的teamCode请替换成自己的唯一teamCode，此外请不要透露自己的teamCode给别人哦。
@@ -135,14 +136,14 @@ java $JAVA_OPS -cp $jarPath com.alibaba.middleware.race.sync.Client
 
 
 
-# ========================================================== 如何使用Demo ================================================
+# ================================= 如何使用Demo ================================
 Demo基于netty实现了简单的客户端和服务端程序。
 1. Server: 负责接收评测系统给其的输入(通过args参数)，并且将解析好的数据交给Client。
 2. Client: 启动后根据评测系统给其的serverIp来启动，启动后接受Server的信息，并且将最终结果写入到指定结果文件目录
 
 ```
 Server端Program arguments示例（2个参数）：
-middleware {"student":"2","teacher":"1"}
+middleware student 100 200
 
 Client端Program arguments示例：
 127.0.0.1
@@ -174,8 +175,18 @@ teamcode是识别选手的唯一标示，评测程序会从选手teamcode相关�
 2. 写出结果文件一定要用指定的名字
 3. 结果文件要在Client端写到指定目录
 4. Client和Server的类名必须是"Client"和"Server"，否则评测程序无法正常启动选手的程序
-5. 评测程序给server的参数，第一个schema是String，第二个是个json，可以按照Demo来解析
+5. 评测程序给server的参数，第一个参数是schema名字，第二个参数是table名字，第三个参数和第四个参数表征查询的主键范围。具体可以查看Demo
 6. 构建工程必须保证构件名字为sync，最后得到的jar为sync-1.0.jar，建议使用Demo里面的assembly.xml，用mvn clean assembly:assembly -Dmaven.test.skip=true命令打包。
+7. 结果文件的格式可以使用SQL:select * into outfile 'student.txt' from student来获得。默认每一列都是以tab分隔，每一行都以'\n'来换行
+8. 变更信息的10个数据文件命名为： 1.txt、2.txt、3.txt、4.txt、5.txt、6.txt、7.txt、8.txt、9.txt、10.txt
+
+
+结果文件格式例子如下，每列分别代表ID、名称、城市、性别
+
+```
+1	李雷   杭州  男
+2   韩梅梅 北京  女
+```
 
 
 
@@ -183,8 +194,7 @@ teamcode是识别选手的唯一标示，评测程序会从选手teamcode相关�
 
 
 
-
-# ============================================================ FAQ ======================================================
+# =========================================== FAQ =========================================
 
 > 环境相关
 
@@ -296,6 +306,12 @@ file locks                      (-x) unlimited
 
 ```
 可以，不过只能使用200MB，这个已通过JVM参数指定
+```
+
+6. 数据文件是按照时间排序的吗？
+
+```
+是的，1.txt中的时间最早，10.txt文件中的变更信息时间最晚。同一个文件内也是最前面的行时间最早
 ```
 
 
