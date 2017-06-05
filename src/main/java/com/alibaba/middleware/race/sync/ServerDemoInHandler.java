@@ -1,5 +1,6 @@
 package com.alibaba.middleware.race.sync;
 
+import io.netty.handler.codec.string.LineSeparator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -11,12 +12,22 @@ import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
 
+import java.io.IOException;
+import java.io.RandomAccessFile;
+import java.nio.MappedByteBuffer;
+import java.nio.channels.FileChannel;
+import java.util.Arrays;
+import java.util.List;
+
 /**
  * 处理client端的请求 Created by wanshao on 2017/5/25.
  */
 public class ServerDemoInHandler extends ChannelInboundHandlerAdapter {
 
     private static Logger logger = LoggerFactory.getLogger(ServerDemoInHandler.class);
+    private static final int PAGE_SIZE = 4*1024;
+    private static final byte SPLITE_FLAG = (byte)124;
+    private static final byte END_FLAG = (byte)10;
 
     /**
      * 根据channel
@@ -76,6 +87,82 @@ public class ServerDemoInHandler extends ChannelInboundHandlerAdapter {
         Thread.sleep(5000);
 
         return "message generated in ServerDemoInHandler";
+
+    }
+
+    private void pullBytesFormFile(String file) throws IOException{
+        FileChannel channel = new RandomAccessFile(file, "rw").getChannel();
+        MappedByteBuffer buffer = channel.map(FileChannel.MapMode.READ_ONLY, 0, Math.min(channel.size(), PAGE_SIZE));
+
+        for (long i = 0; i < channel.size() ; i=i+PAGE_SIZE)
+        {
+            if (!buffer.hasRemaining())
+            {
+                buffer = channel.map(FileChannel.MapMode.READ_ONLY, i, Math.min(channel.size() - i , PAGE_SIZE));
+            }
+            byte[] bytes = new byte[buffer.remaining()];
+            buffer.get(bytes);
+            getLogFromBytes(bytes);
+        }
+
+        channel.close();
+    }
+
+    private void getLogFromBytes(byte[] logs){
+        int start = 0, end;
+        while (true){
+            start = start + 37;
+            end = findFirstByte(logs,start,SPLITE_FLAG);
+            String schema = getStrFromBytes(logs,start,end);
+            start = end;
+            end = findFirstByte(logs,start,SPLITE_FLAG);
+            String table = getStrFromBytes(logs,start,end);
+            start = end;
+            end = findFirstByte(logs,start,SPLITE_FLAG);
+            String operate = getStrFromBytes(logs,start,end);
+            start = end;
+            end = findFirstByte(logs,end,END_FLAG);
+
+            switch (operate){
+                case "I":
+                    insertOperate(schema, table, operate, logs, start, end);
+                    break;
+                case "U":
+                    updateOperate(schema, table, operate, logs, start, end);
+                    break;
+                case "D":
+                    deleteOperate(schema, table, operate, logs, start, end);
+                    break;
+            }
+
+            start = end;
+        }
+    }
+
+    private String getStrFromBytes(byte[] logs,int start,int end){
+        byte[] schemaBytes = new byte[end-start-1];
+        System.arraycopy(schemaBytes,start+1,schemaBytes,0,end-start-1);
+        return new String(schemaBytes);
+    }
+
+    private int findFirstByte(byte[] logs,int start,byte value){
+        int index = start;
+        for (int i=start;i<logs.length;i++){
+            if (logs[i] == value){
+                index = i;
+                break;
+            }
+        }
+        return index;
+    }
+
+    private void insertOperate(String schema,String table,String operate,byte[] logs,int start,int end){
+
+    }
+    private void updateOperate(String schema,String table,String operate,byte[] logs,int start,int end){
+
+    }
+    private void deleteOperate(String schema,String table,String operate,byte[] logs,int start,int end){
 
     }
 }

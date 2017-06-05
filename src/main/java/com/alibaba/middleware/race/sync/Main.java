@@ -1,0 +1,68 @@
+package com.alibaba.middleware.race.sync;
+
+import java.io.IOException;
+import java.io.RandomAccessFile;
+import java.nio.MappedByteBuffer;
+import java.nio.channels.FileChannel;
+import java.util.Arrays;
+
+/**
+ * Created by tuzhenyu on 17-6-5.
+ * @author tuzhenyu
+ */
+public class Main {
+    private static final int PAGE_SIZE = 4*1024*1024;
+
+    public static void main(String[] args) throws IOException {
+        String file = "/home/tuzhenyu/tmp/canal_data/test.txt";
+        FileChannel channel = new RandomAccessFile(file, "rw").getChannel();
+        MappedByteBuffer buffer = channel.map(FileChannel.MapMode.READ_ONLY, 0, Math.min(channel.size(), PAGE_SIZE));
+
+        for (long i = 0; i < channel.size() ; i=i+PAGE_SIZE)
+        {
+            if (!buffer.hasRemaining())
+            {
+                buffer = channel.map(FileChannel.MapMode.READ_ONLY, i, Math.min(channel.size() - i , PAGE_SIZE));
+            }
+            byte[] bytes = new byte[buffer.remaining()];
+            buffer.get(bytes);
+            System.out.println(Arrays.toString(bytes));
+
+//            System.out.println(findFirstByte(bytes,37,(byte)124));
+
+            int start = 0, end;
+            start = start + 37;
+            end = findFirstByte(bytes,start,(byte)124);
+            String schema = getResultStr(bytes,start,end);
+            System.out.println(schema);
+            start = end;
+            end = findFirstByte(bytes,start,(byte)124);
+            String table = getResultStr(bytes,start,end);
+            System.out.println(table);
+            start = end;
+            end = findFirstByte(bytes,start,(byte)124);
+            String operate = getResultStr(bytes,start,end);
+            System.out.println(operate);
+            System.out.println(findFirstByte(bytes,end,(byte)10));
+        }
+
+        channel.close();
+    }
+
+    private static String getResultStr(byte[] logs,int start,int end){
+        byte[] schemaBytes = new byte[end-start-1];
+        System.arraycopy(logs,start+1,schemaBytes,0,end-start-1);
+        return new String(schemaBytes);
+    }
+
+    private static int findFirstByte(byte[] logs,int start,byte value){
+        int index = start;
+        for (int i=start+1;i<logs.length;i++){
+            if (logs[i] == value){
+                index = i;
+                break;
+            }
+        }
+        return index;
+    }
+}

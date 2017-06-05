@@ -41,7 +41,7 @@ public class Server {
     public static void main(String[] args) throws InterruptedException {
         initProperties();
 
-        printInput(args);
+//        printInput(args);
 //        schema = args[0];
 //        JSONObject jsonObject = JSONObject.parseObject(args[1]);
         schema = "middleware" ;
