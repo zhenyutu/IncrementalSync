@@ -121,6 +121,7 @@ public class ServerDemoInHandler extends ChannelInboundHandlerAdapter {
             lastLogs = getLogFromBytes(logs);
         }
 
+        flush();
         channel.close();
     }
 
@@ -207,6 +208,13 @@ public class ServerDemoInHandler extends ChannelInboundHandlerAdapter {
             fileByteBuffer.put(schemaTable,buffer);
         }
 
+        FileChannel channel = fileChannel.get(schemaTable);
+        if (channel==null){
+            String fileName = Constants.TESTER_HOME+"/"+schemaTable+".txt";
+            channel = new RandomAccessFile(fileName, "rw").getChannel();
+            fileChannel.put(schemaTable,channel);
+        }
+
         buffer.put(findSingleStr(logs,start,SPLITE_FLAG,3));
         for (int n = 3;;n=n+3){
             if (position+1<end){
@@ -217,18 +225,12 @@ public class ServerDemoInHandler extends ChannelInboundHandlerAdapter {
             }
         }
         buffer.put(END_FLAG);
-//        if (buffer.remaining()<REMAINING_SIZE)
-//        {
-            FileChannel channel = fileChannel.get(schemaTable);
-            if (channel==null){
-                String fileName = Constants.TESTER_HOME+"/"+schemaTable+".txt";
-                channel = new RandomAccessFile(fileName, "rw").getChannel();
-                fileChannel.put(schemaTable,channel);
-            }
+        if (buffer.remaining()<REMAINING_SIZE)
+        {
             buffer.flip();
             channel.write(buffer);
             buffer.clear();
-//        }
+        }
     }
     private void updateOperate(String schemaTable,byte[] logs,int start,int end){
 
@@ -241,5 +243,15 @@ public class ServerDemoInHandler extends ChannelInboundHandlerAdapter {
         ServerDemoInHandler handler = new ServerDemoInHandler();
         String file = "/home/tuzhenyu/tmp/canal_data/canal.txt";
         handler.pullBytesFormFile(file);
+    }
+
+    private void flush() throws IOException{
+        for (Map.Entry entry : fileByteBuffer.entrySet()){
+            String key = (String) entry.getKey();
+            ByteBuffer buffer= fileByteBuffer.get(key);
+            FileChannel channel = fileChannel.get(key);
+            buffer.flip();
+            channel.write(buffer);
+        }
     }
 }
