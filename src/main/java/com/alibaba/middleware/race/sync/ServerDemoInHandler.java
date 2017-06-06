@@ -98,6 +98,8 @@ public class ServerDemoInHandler extends ChannelInboundHandlerAdapter {
     }
 
     private void pullBytesFormFile(String file) throws IOException{
+        byte[] lastLogs = null;
+        byte[] logs;
         FileChannel channel = new RandomAccessFile(file, "rw").getChannel();
         MappedByteBuffer buffer = channel.map(FileChannel.MapMode.READ_ONLY, 0, Math.min(channel.size(), PAGE_SIZE));
 
@@ -109,15 +111,29 @@ public class ServerDemoInHandler extends ChannelInboundHandlerAdapter {
             }
             byte[] bytes = new byte[buffer.remaining()];
             buffer.get(bytes);
-            getLogFromBytes(bytes);
+            if (lastLogs != null){
+                logs = new byte[lastLogs.length+bytes.length];
+                System.arraycopy(lastLogs, 0, logs, 0, lastLogs.length);
+                System.arraycopy(bytes, 0, logs, lastLogs.length, bytes.length);
+            }else {
+                logs = bytes;
+            }
+            lastLogs = getLogFromBytes(logs);
         }
 
         channel.close();
     }
 
-    private void getLogFromBytes(byte[] logs) throws IOException{
-        int start = 0, end;
+    private byte[] getLogFromBytes(byte[] logs) throws IOException{
+        int start = 0, end ,LogEnd;
+        byte[] lastLogs = null;
         while (true){
+            LogEnd = findFirstByte(logs,start,END_FLAG,1);
+            if (LogEnd == start){
+                lastLogs = new byte[logs.length-start+1];
+                System.arraycopy(logs,start-1,lastLogs,0,logs.length-start+1);
+                break;
+            }
             start = start + 37;
             end = findFirstByte(logs,start,SPLITE_FLAG,2);
             String schemaTable = getStrFromBytes(logs,start,end);
@@ -126,23 +142,23 @@ public class ServerDemoInHandler extends ChannelInboundHandlerAdapter {
             String operate = getStrFromBytes(logs,start,end);
             start = end;
             position = end;
-            end = findFirstByte(logs,end,END_FLAG,1);
 
             switch (operate){
                 case "I":
-                    insertOperate(schemaTable, logs, start, end);
+                    insertOperate(schemaTable, logs, start, LogEnd);
                     break;
                 case "U":
-                    updateOperate(schemaTable, logs, start, end);
+                    updateOperate(schemaTable, logs, start, LogEnd);
                     break;
                 case "D":
-                    deleteOperate(schemaTable, logs, start, end);
+                    deleteOperate(schemaTable, logs, start, LogEnd);
                     break;
             }
             if (end>=logs.length-1)
                 break;
-            start = end+1;
+            start = LogEnd+1;
         }
+        return lastLogs;
     }
 
     private String getStrFromBytes(byte[] logs,int start,int end){
