@@ -29,6 +29,7 @@ public class Client {
         logger.info("Welcome");
         // 从args获取server端的ip
         ip = args[0];
+        logger.info("ip:"+ip);
 //        ip = "127.0.0.1";
         Client client = new Client();
         client.connect(ip, port);
