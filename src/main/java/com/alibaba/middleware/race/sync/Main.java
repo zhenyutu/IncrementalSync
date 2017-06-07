@@ -15,6 +15,7 @@ public class Main {
     private static int position;
 
     public static void main(String[] args) throws IOException {
+
         String file = "/home/tuzhenyu/tmp/canal_data/test.txt";
         FileChannel channel = new RandomAccessFile(file, "rw").getChannel();
         MappedByteBuffer buffer = channel.map(FileChannel.MapMode.READ_ONLY, 0, Math.min(channel.size(), PAGE_SIZE));
@@ -46,7 +47,9 @@ public class Main {
             String operate = getResultStr(bytes,start,end);
             System.out.println(operate);
             start = end;
-            position = end;
+            String id = new String(findSingleStr(bytes,start,(byte)124,3));
+            System.out.println(id);
+//            position = end;
             end = findFirstByte(bytes,end,(byte)10,1);
             for (int n = 3;;n=n+3){
                 if (position+1<end){
@@ -108,5 +111,17 @@ public class Main {
         byte[] schemaBytes = new byte[end-index-1];
         System.arraycopy(logs,index+1,schemaBytes,0,end-index-1);
         return new String(schemaBytes);
+    }
+
+    private static boolean compareTo(String str1,String str2){
+        int length1 = str1.length();
+        int length2 = str2.length();
+        if (length1<length2)
+            return false;
+        else if (length1>length2)
+            return true;
+        else {
+            return str1.compareTo(str2)>=0;
+        }
     }
 }

@@ -27,7 +27,7 @@ public class LogStore {
     private static final int REMAINING_SIZE = 50;
     private static final byte SPLITE_FLAG = (byte)124;
     private static final byte END_FLAG = (byte)10;
-    private static final byte SPACE_FLAG = (byte)32;
+    private static final byte SPACE_FLAG = (byte)9;
 
     private int position = 0;
 
@@ -60,7 +60,7 @@ public class LogStore {
             lastLogs = getLogFromBytes(logs, schemaTable, start, end);
         }
 
-        flush();
+        flush(schemaTable);
         channel.close();
     }
 
@@ -77,7 +77,7 @@ public class LogStore {
             start = start + 39;
             end = findFirstByte(logs,start,SPLITE_FLAG,2);
             String schemaTable = getStrFromBytes(logs,start,end);
-            if (schemaTableName.equals(schemaTable)){
+            if (!schemaTableName.equals(schemaTable)){
                 start = LogEnd+1;
                 continue;
             }
@@ -85,17 +85,22 @@ public class LogStore {
             end = findFirstByte(logs,start,SPLITE_FLAG,1);
             String operate = getStrFromBytes(logs,start,end);
             start = end;
-            position = end;
+            byte[] idBytes = findSingleStr(logs,start,SPLITE_FLAG,3);
+            String id = new String(idBytes);
+            if (compareTo(startId,id)||compareTo(id,endId)){
+                start = LogEnd+1;
+                continue;
+            }
 
             switch (operate){
                 case "I":
-                    insertOperate(schemaTable, logs, start, LogEnd);
+                    insertOperate(schemaTable, idBytes, logs, LogEnd);
                     break;
                 case "U":
-                    updateOperate(schemaTable, logs, start, LogEnd);
+                    updateOperate(schemaTable, logs, position, LogEnd);
                     break;
                 case "D":
-                    deleteOperate(schemaTable, logs, start, LogEnd);
+                    deleteOperate(schemaTable, logs, position, LogEnd);
                     break;
             }
             if (end>=logs.length-1)
@@ -144,21 +149,14 @@ public class LogStore {
         return schemaBytes;
     }
 
-    private void insertOperate(String schemaTable,byte[] logs,int start,int end)throws IOException{
+    private void insertOperate(String schemaTable,byte[] idBytes,byte[] logs,int end)throws IOException{
         ByteBuffer buffer = fileByteBuffer.get(schemaTable);
         if (buffer==null){
             buffer = ByteBuffer.allocate(PAGE_SIZE);
             fileByteBuffer.put(schemaTable,buffer);
         }
 
-        FileChannel channel = fileChannel.get(schemaTable);
-        if (channel==null){
-            String fileName = Constants.TESTER_HOME+"/"+schemaTable+".txt";
-            channel = new RandomAccessFile(fileName, "rw").getChannel();
-            fileChannel.put(schemaTable,channel);
-        }
-
-        buffer.put(findSingleStr(logs,start,SPLITE_FLAG,3));
+        buffer.put(idBytes);
         for (int n = 3;;n=n+3){
             if (position+1<end){
                 buffer.put(SPACE_FLAG);
@@ -170,6 +168,13 @@ public class LogStore {
         buffer.put(END_FLAG);
         if (buffer.remaining()<REMAINING_SIZE)
         {
+            FileChannel channel = fileChannel.get(schemaTable);
+            if (channel==null){
+                String fileName = Constants.TESTER_HOME+"/"+schemaTable+".txt";
+                channel = new RandomAccessFile(fileName, "rw").getChannel();
+                fileChannel.put(schemaTable,channel);
+            }
+
             buffer.flip();
             channel.write(buffer);
             buffer.clear();
@@ -186,18 +191,35 @@ public class LogStore {
         LogStore handler = new LogStore();
         String file = "/home/tuzhenyu/tmp/canal_data/canal.txt";
         long startConsumer = System.currentTimeMillis();
-        handler.pullBytesFormFile(file,"middleware3","student","10","100");
+        handler.pullBytesFormFile(file,"middleware3","student","10","10000");
         long endConsumer = System.currentTimeMillis();
         System.out.println(endConsumer-startConsumer);
     }
 
-    private void flush() throws IOException{
+    private void flush(String schemaTable) throws IOException{
         for (Map.Entry entry : fileByteBuffer.entrySet()){
             String key = (String) entry.getKey();
             ByteBuffer buffer= fileByteBuffer.get(key);
             FileChannel channel = fileChannel.get(key);
+            if (channel==null){
+                String fileName = Constants.TESTER_HOME+"/"+schemaTable+".txt";
+                channel = new RandomAccessFile(fileName, "rw").getChannel();
+                fileChannel.put(schemaTable,channel);
+            }
             buffer.flip();
             channel.write(buffer);
+        }
+    }
+
+    private boolean compareTo(String str1,String str2){
+        int length1 = str1.length();
+        int length2 = str2.length();
+        if (length1<length2)
+            return false;
+        else if (length1>length2)
+            return true;
+        else {
+            return str1.compareTo(str2)>=0;
         }
     }
 }
