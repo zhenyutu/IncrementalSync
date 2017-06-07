@@ -23,12 +23,6 @@ public class Server {
 
     // 保存channel
     private static Map<String, Channel> map = new ConcurrentHashMap<String, Channel>();
-    // 接收评测程序的三个参数
-    private static String schema;
-    private static String table;
-    private static String start;
-    private static String end;
-
 
     public static Map<String, Channel> getMap() {
         return map;
@@ -40,18 +34,21 @@ public class Server {
 
     public static void main(String[] args) throws InterruptedException {
         initProperties();
-
-        schema = args[0];
-        table = args[1];
-        start = args[2];
-        end = args[3];
-
         Logger logger = LoggerFactory.getLogger(Client.class);
+
+        // 第一个参数是Schema Name
+        logger.info("Schema:" + args[0]);
+        // 第二个参数是Schema Name
+        logger.info("table:" + args[1]);
+        // 第三个参数是start pk Id
+        logger.info("start:" + args[2]);
+        // 第四个参数是end pk Id
+        logger.info("end:" + args[3]);
 
         Server server = new Server();
         logger.info("com.alibaba.middleware.race.sync.Server is running....");
 
-        server.startServer(5527);
+        server.startServer(5527,args[0],args[1],args[2],args[3]);
     }
 
     /**
@@ -60,14 +57,7 @@ public class Server {
      * id>100 and id<200
      */
     private static void printInput(String[] args) {
-        // 第一个参数是Schema Name
-        System.out.println("Schema:" + args[0]);
-        // 第二个参数是Schema Name
-        System.out.println("table:" + args[1]);
-        // 第三个参数是start pk Id
-        System.out.println("start:" + args[2]);
-        // 第四个参数是end pk Id
-        System.out.println("end:" + args[3]);
+
 
     }
 
@@ -81,7 +71,7 @@ public class Server {
     }
 
 
-    private void startServer(int port) throws InterruptedException {
+    private void startServer(int port,final String schema,final String table,final String start,final String end) throws InterruptedException {
         EventLoopGroup bossGroup = new NioEventLoopGroup();
         EventLoopGroup workerGroup = new NioEventLoopGroup();
         try {
@@ -93,7 +83,7 @@ public class Server {
                     @Override
                     public void initChannel(SocketChannel ch) throws Exception {
                         // 注册handler
-                        ch.pipeline().addLast(new ServerDemoInHandler());
+                        ch.pipeline().addLast(new ServerDemoInHandler(schema,table,start,end));
                         // ch.pipeline().addLast(new ServerDemoOutHandler());
                     }
                 })

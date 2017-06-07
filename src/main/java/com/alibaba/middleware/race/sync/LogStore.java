@@ -35,7 +35,8 @@ public class LogStore {
     private Map<String,FileChannel> fileChannel = new HashMap<>();
 
 
-    private void pullBytesFormFile(String file,String schema,String table,String start,String end) throws IOException {
+    public void pullBytesFormFile(String file,String schema,String table,String start,String end) throws IOException {
+        logger.info("get into the pullBytesFormFile");
         byte[] lastLogs = null;
         byte[] logs;
         FileChannel channel = new RandomAccessFile(file, "rw").getChannel();
@@ -91,6 +92,7 @@ public class LogStore {
                 start = LogEnd+1;
                 continue;
             }
+            logger.info("the log is:"+schemaTable+"-"+id);
 
             switch (operate){
                 case "I":
@@ -172,7 +174,7 @@ public class LogStore {
         {
             FileChannel channel = fileChannel.get(schemaTable);
             if (channel==null){
-                String fileName = Constants.TESTER_HOME+"/"+schemaTable+".txt";
+                String fileName = Constants.MIDDLE_HOME+"/"+schemaTable+".txt";
                 channel = new RandomAccessFile(fileName, "rw").getChannel();
                 fileChannel.put(schemaTable,channel);
             }
