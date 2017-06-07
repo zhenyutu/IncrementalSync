@@ -1,13 +1,10 @@
 package com.alibaba.middleware.race.sync;
 
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.concurrent.ConcurrentHashMap;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import com.alibaba.fastjson.JSONObject;
 
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.Channel;
@@ -28,7 +25,10 @@ public class Server {
     private static Map<String, Channel> map = new ConcurrentHashMap<String, Channel>();
     // 接收评测程序的三个参数
     private static String schema;
-    private static Map tableNamePkMap;
+    private static String table;
+    private static String start;
+    private static String end;
+
 
     public static Map<String, Channel> getMap() {
         return map;
@@ -41,23 +41,13 @@ public class Server {
     public static void main(String[] args) throws InterruptedException {
         initProperties();
 
-//        printInput(args);
-//        schema = args[0];
-//        JSONObject jsonObject = JSONObject.parseObject(args[1]);
-        schema = "middleware" ;
-        JSONObject jsonObject = JSONObject.parseObject("{\"student\":\"2\",\"teacher\":\"1\"}");
-
-        tableNamePkMap = JSONObject.parseObject(jsonObject.toJSONString());
+        schema = args[0];
+        table = args[1];
+        start = args[2];
+        end = args[3];
 
         Logger logger = LoggerFactory.getLogger(Client.class);
-        logger.info("schema:" + schema);
-        // 打印下输入内容
-        for (Object object : tableNamePkMap.entrySet()) {
-            Entry<String, Long> entry = (Entry<String, Long>) object;
-            logger.info("tableName:" + entry.getKey());
-            logger.info("PrimaryKey:" + entry.getValue());
 
-        }
         Server server = new Server();
         logger.info("com.alibaba.middleware.race.sync.Server is running....");
 
