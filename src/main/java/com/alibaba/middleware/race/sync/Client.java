@@ -41,6 +41,7 @@ public class Client {
     private static void initProperties() {
         System.setProperty("middleware.test.home", Constants.TESTER_HOME);
         System.setProperty("middleware.teamcode", Constants.TEAMCODE);
+        System.setProperty("middleware.logName", Constants.CLIENT_LOG_NAME);
         System.setProperty("app.logging.level", Constants.LOG_LEVEL);
     }
 

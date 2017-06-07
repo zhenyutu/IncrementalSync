@@ -34,21 +34,27 @@ public class Server {
 
     public static void main(String[] args) throws InterruptedException {
         initProperties();
-        Logger logger = LoggerFactory.getLogger(Client.class);
+        Logger logger = LoggerFactory.getLogger(Server.class);
 
-        // 第一个参数是Schema Name
-        logger.info("Schema:" + args[0]);
-        // 第二个参数是Schema Name
-        logger.info("table:" + args[1]);
-        // 第三个参数是start pk Id
-        logger.info("start:" + args[2]);
-        // 第四个参数是end pk Id
-        logger.info("end:" + args[3]);
+//        args[0] = "middleware3";
+//        args[1] = "student";
+//        args[2] = "100";
+//        args[3] = "500";
+//
+//        // 第一个参数是Schema Name
+//        logger.info("Schema:" + args[0]);
+//        // 第二个参数是Schema Name
+//        logger.info("table:" + args[1]);
+//        // 第三个参数是start pk Id
+//        logger.info("start:" + args[2]);
+//        // 第四个参数是end pk Id
+//        logger.info("end:" + args[3]);
 
         Server server = new Server();
         logger.info("com.alibaba.middleware.race.sync.Server is running....");
 
-        server.startServer(5527,args[0],args[1],args[2],args[3]);
+//        server.startServer(5527,args[0],args[1],args[2],args[3]);
+        server.startServer(5527,"middleware3","student","100","500");
     }
 
     /**
@@ -56,10 +62,6 @@ public class Server {
      * 上面表示，查询的schema为middleware，查询的表为student,主键的查询范围是(100,200)，注意是开区间 对应DB的SQL为： select * from middleware.student where
      * id>100 and id<200
      */
-    private static void printInput(String[] args) {
-
-
-    }
 
     /**
      * 初始化系统属性
@@ -67,6 +69,7 @@ public class Server {
     private static void initProperties() {
         System.setProperty("middleware.test.home", Constants.TESTER_HOME);
         System.setProperty("middleware.teamcode", Constants.TEAMCODE);
+        System.setProperty("middleware.logName", Constants.SERVER_LOG_NAME);
         System.setProperty("app.logging.level", Constants.LOG_LEVEL);
     }
 
