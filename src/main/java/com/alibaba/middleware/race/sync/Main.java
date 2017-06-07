@@ -34,7 +34,8 @@ public class Main {
 //            System.out.println(findFirstByte(bytes,37,(byte)124));
 
             int start = 0, end;
-            start = start + 37;
+            start = findFirstByte(bytes,start,(byte)124,2);
+            System.out.println(start);
             end = findFirstByte(bytes,start,(byte)124,2);
             String schema = getResultStr(bytes,start,end);
             System.out.println(schema);

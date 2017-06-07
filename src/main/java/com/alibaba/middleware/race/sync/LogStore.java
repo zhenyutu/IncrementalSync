@@ -70,11 +70,11 @@ public class LogStore {
         while (true){
             LogEnd = findFirstByte(logs,start,END_FLAG,1);
             if (LogEnd == start){
-                lastLogs = new byte[logs.length-start+1];
-                System.arraycopy(logs,start-1,lastLogs,0,logs.length-start+1);
+                lastLogs = new byte[logs.length-start];
+                System.arraycopy(logs,start,lastLogs,0,logs.length-start);
                 break;
             }
-            start = start + 39;
+            start = findFirstByte(logs,start,SPLITE_FLAG,2);
             end = findFirstByte(logs,start,SPLITE_FLAG,2);
             String schemaTable = getStrFromBytes(logs,start,end);
             if (!schemaTableName.equals(schemaTable)){
@@ -102,6 +102,8 @@ public class LogStore {
                 case "D":
                     deleteOperate(schemaTable, logs, position, LogEnd);
                     break;
+                default:
+                    throw new IOException("error");
             }
             if (end>=logs.length-1)
                 break;
