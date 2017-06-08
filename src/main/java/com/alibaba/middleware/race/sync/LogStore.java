@@ -40,21 +40,18 @@ public class LogStore {
         byte[] lastLogs = null;
         byte[] logs;
         FileChannel channel = new RandomAccessFile(file, "rw").getChannel();
-        MappedByteBuffer buffer = channel.map(FileChannel.MapMode.READ_ONLY, 0, Math.min(channel.size(), PAGE_SIZE));
+        MappedByteBuffer buffer;
         String schemaTable = schema+"|"+table;
 
-        for (long i = 0; i < channel.size() ; i=i+PAGE_SIZE)
+        for (long i = channel.size(); i > 0 ; i=i-PAGE_SIZE)
         {
-            if (!buffer.hasRemaining())
-            {
-                buffer = channel.map(FileChannel.MapMode.READ_ONLY, i, Math.min(channel.size() - i , PAGE_SIZE));
-            }
+            buffer = channel.map(FileChannel.MapMode.READ_ONLY, Math.max(i-PAGE_SIZE , 0), Math.min(i , PAGE_SIZE));
             byte[] bytes = new byte[buffer.remaining()];
             buffer.get(bytes);
             if (lastLogs != null){
                 logs = new byte[lastLogs.length+bytes.length];
-                System.arraycopy(lastLogs, 0, logs, 0, lastLogs.length);
-                System.arraycopy(bytes, 0, logs, lastLogs.length, bytes.length);
+                System.arraycopy(bytes, 0, logs, 0, bytes.length);
+                System.arraycopy(lastLogs, 0, logs, bytes.length, lastLogs.length);
             }else {
                 logs = bytes;
             }
@@ -66,20 +63,20 @@ public class LogStore {
     }
 
     private byte[] getLogFromBytes(byte[] logs,String schemaTableName,String startId,String endId) throws IOException{
-        int start = 0, end ,LogEnd;
-        byte[] lastLogs = null;
+        int start = 0, end ,preLogEnd,logEnd= logs.length;
+        end =  findFirstByte(logs,start,END_FLAG,1);
+        byte[] lastLogs = new byte[end+1];
+        System.arraycopy(logs,0,lastLogs,0,end+1);
+
         while (true){
-            LogEnd = findFirstByte(logs,start,END_FLAG,1);
-            if (LogEnd == start){
-                lastLogs = new byte[logs.length-start];
-                System.arraycopy(logs,start,lastLogs,0,logs.length-start);
+            preLogEnd = findNextEnt(logs,logEnd,END_FLAG);
+            if (logEnd == preLogEnd)
                 break;
-            }
-            start = findFirstByte(logs,start,SPLITE_FLAG,2);
+            start = findFirstByte(logs,preLogEnd+2,SPLITE_FLAG,2);
             end = findFirstByte(logs,start,SPLITE_FLAG,2);
             String schemaTable = getStrFromBytes(logs,start,end);
             if (!schemaTableName.equals(schemaTable)){
-                start = LogEnd+1;
+                logEnd = preLogEnd;
                 continue;
             }
             start = end;
@@ -89,27 +86,24 @@ public class LogStore {
             byte[] idBytes = findSingleStr(logs,start,SPLITE_FLAG,3);
             String id = new String(idBytes);
             if (compareTo(startId,id)||compareTo(id,endId)){
-                start = LogEnd+1;
+                logEnd = preLogEnd;
                 continue;
             }
-//            logger.info("the log is:"+schemaTable+"-"+id);
 
             switch (operate){
                 case "I":
-                    insertOperate(schemaTable, idBytes, logs, LogEnd);
+                    insertOperate(schemaTable, idBytes, logs, logEnd);
                     break;
                 case "U":
-                    updateOperate(schemaTable, logs, position, LogEnd);
+                    updateOperate(schemaTable, logs, position, logEnd);
                     break;
                 case "D":
-                    deleteOperate(schemaTable, logs, position, LogEnd);
+                    deleteOperate(schemaTable, logs, position, logEnd);
                     break;
                 default:
                     throw new IOException("error");
             }
-            if (end>=logs.length-1)
-                break;
-            start = LogEnd+1;
+            logEnd = preLogEnd;
         }
         return lastLogs;
     }
@@ -129,6 +123,17 @@ public class LogStore {
                     index = i;
                     break;
                 }
+            }
+        }
+        return index;
+    }
+
+    private static int findNextEnt(byte[] logs,int start,byte value){
+        int index = start;
+        for (int i=start-2;i>=0;i--){
+            if (logs[i] == value){
+                index = i;
+                break;
             }
         }
         return index;
@@ -162,9 +167,10 @@ public class LogStore {
 
         buffer.put(idBytes);
         for (int n = 3;;n=n+3){
-            if (position+1<end){
+            if (position+2<end){
                 buffer.put(SPACE_FLAG);
-                buffer.put(findSingleStr(logs,position,SPLITE_FLAG,3));
+                byte[] tmp = findSingleStr(logs,position,SPLITE_FLAG,3);
+                buffer.put(tmp);
             }else {
                 break;
             }
@@ -195,7 +201,7 @@ public class LogStore {
         LogStore handler = new LogStore();
         String file = "/home/tuzhenyu/tmp/canal_data/canal.txt";
         long startConsumer = System.currentTimeMillis();
-        handler.pullBytesFormFile(file,"middleware3","student","1","10000");
+        handler.pullBytesFormFile(file,"middleware3","student","700","1000");
         long endConsumer = System.currentTimeMillis();
         System.out.println(endConsumer-startConsumer);
     }
@@ -206,7 +212,7 @@ public class LogStore {
             ByteBuffer buffer= fileByteBuffer.get(key);
             FileChannel channel = fileChannel.get(key);
             if (channel==null){
-                String fileName = Constants.TESTER_HOME+"/"+schemaTable+".txt";
+                String fileName = Constants.MIDDLE_HOME+"/"+schemaTable+".txt";
                 channel = new RandomAccessFile(fileName, "rw").getChannel();
                 fileChannel.put(schemaTable,channel);
             }

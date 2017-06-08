@@ -14,7 +14,7 @@ interface Constants {
     String DATA_HOME = "/home/tuzhenyu/work/canal_data";
 
     // 中间结果目录
-    String MIDDLE_HOME = "/home/tuzhenyu/work/middlewareTester/";
+    String MIDDLE_HOME = "/home/tuzhenyu/work/middlewareTester/middle";
 
     // 结果文件目录
 //    String RESULT_HOME = "/home/tuzhenyu/work/middlewareTester/user_result";
