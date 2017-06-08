@@ -92,7 +92,7 @@ public class LogStore {
                 start = LogEnd+1;
                 continue;
             }
-            logger.info("the log is:"+schemaTable+"-"+id);
+//            logger.info("the log is:"+schemaTable+"-"+id);
 
             switch (operate){
                 case "I":
@@ -195,7 +195,7 @@ public class LogStore {
         LogStore handler = new LogStore();
         String file = "/home/tuzhenyu/tmp/canal_data/canal.txt";
         long startConsumer = System.currentTimeMillis();
-        handler.pullBytesFormFile(file,"middleware3","student","10","10000");
+        handler.pullBytesFormFile(file,"middleware3","student","1","10000");
         long endConsumer = System.currentTimeMillis();
         System.out.println(endConsumer-startConsumer);
     }
@@ -223,7 +223,7 @@ public class LogStore {
         else if (length1>length2)
             return true;
         else {
-            return str1.compareTo(str2)>=0;
+            return str1.compareTo(str2)>0;
         }
     }
 }
