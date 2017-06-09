@@ -39,8 +39,8 @@ public class LogStore {
     private int position = 0;
     private ByteBuffer resultBuffer = null;
 
-    private ArrayList<Integer> addList = new ArrayList<>();
-    private Map<Integer,Integer> addMap = new HashMap<>();
+    private ArrayList<Long> addList = new ArrayList<>();
+    private Map<Long,Integer> addMap = new HashMap<>();
     private boolean[] finishArr = null;
     private byte[] clear = new byte[20];
 
@@ -169,15 +169,15 @@ public class LogStore {
 
     private void insertOperate(byte[] logs,int start,int end,int startId,int endId)throws IOException{
         byte[] idBytes = findSingleStr(logs,start,SPLITE_FLAG,3);
-        int id = Integer.parseInt(new String(idBytes));
+        long id = Long.parseLong(new String(idBytes));
         if (id<startId||id>endId){
             if (addList.contains(id)){
                 insert(logs,addMap.get(id),end,startId);
             }
         }else {
-            if (finishArr[id-startId])
+            if (finishArr[(int)id-startId])
                 return;
-            insert(logs,id,end,startId);
+            insert(logs,(int)id,end,startId);
         }
     }
 
@@ -244,14 +244,14 @@ public class LogStore {
         }
     }
     private void updateOperate(byte[] logs,int start,int end,int startId,int endId){
-       int lastId = Integer.parseInt(new String(findSingleStr(logs,start,SPLITE_FLAG,2)));
-       int id = Integer.parseInt(new String(findSingleStr(logs,position,SPLITE_FLAG,1)));
+       long lastId = Long.parseLong(new String(findSingleStr(logs,start,SPLITE_FLAG,2)));
+       long id = Long.parseLong(new String(findSingleStr(logs,position,SPLITE_FLAG,1)));
        if (lastId==id){
-           if (id>=startId&&id<=endId&&!finishArr[id-startId]){ //范围之内且未进行最终操作
+           if (id>=startId&&id<=endId&&!finishArr[(int)id-startId]){ //范围之内且未进行最终操作
                for (;position+2<end;){
                    byte tag = logs[position+3];
                    byte[] tmp = findSingleStr(logs,position,SPLITE_FLAG,3);
-                   updateTag(id,tag,tmp,startId);
+                   updateTag((int)id,tag,tmp,startId);
                }
            }else if ((id<startId||id>endId)&&addList.contains(id)){ //范围之外，映射进入范围之内
                for (;position+2<end;){
@@ -263,33 +263,33 @@ public class LogStore {
        }else {
            if (lastId<=endId&&lastId>=startId){
                if (id<startId||id>endId){ //范围之内改到范围之外　删除范围之内的值
-                   finishArr[lastId-startId] = true;
+                   finishArr[(int)lastId-startId] = true;
                }else {                      //范围之内改到范围之内　删除范围之内的值，添加范围之内的值
                    for (;position+2<end;){
                        byte tag = logs[position+3];
                        byte[] tmp = findSingleStr(logs,position,SPLITE_FLAG,3);
-                       updateTag(id,tag,tmp,startId);
+                       updateTag((int)id,tag,tmp,startId);
                    }
-                   finishArr[lastId-startId] = true;
-                   finishArr[lastId-startId] = false;
+                   finishArr[(int)lastId-startId] = true;
+                   finishArr[(int)lastId-startId] = false;
                }
            }else {
                if (id>startId&&id<endId){   //范围之外改到范围之内　添加范围之外的值
                    for (;position+2<end;){
                        byte tag = logs[position+3];
                        byte[] tmp = findSingleStr(logs,position,SPLITE_FLAG,3);
-                       updateTag(id,tag,tmp,startId);
+                       updateTag((int)id,tag,tmp,startId);
                    }
                    addList.add(lastId);
-                   addMap.put(lastId,id);
+                   addMap.put(lastId,(int)id);
                }
            }
        }
     }
     private void deleteOperate(byte[] logs,int start,int end,int startId,int endId){
-        int lastId = Integer.parseInt(new String(findSingleStr(logs,start,SPLITE_FLAG,2)));
-        if (lastId>startId&&lastId<endId&&!finishArr[lastId-startId])
-            finishArr[lastId-startId] = true;
+        long lastId = Long.parseLong(new String(findSingleStr(logs,start,SPLITE_FLAG,2)));
+        if (lastId>startId&&lastId<endId&&!finishArr[(int)lastId-startId])
+            finishArr[(int) lastId-startId] = true;
 //        ByteBuffer buffer = (ByteBuffer) resultBuffer.position((lastId-startId)*20);
 //        buffer.put(clear);
     }
