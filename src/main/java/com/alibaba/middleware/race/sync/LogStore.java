@@ -66,13 +66,13 @@ public class LogStore {
             byte[] bytes = new byte[buffer.remaining()];
             buffer.get(bytes);
             if (lastLogs != null){
+                logger.info("the last log is not null");
                 logs = new byte[lastLogs.length+bytes.length];
                 System.arraycopy(bytes, 0, logs, 0, bytes.length);
                 System.arraycopy(lastLogs, 0, logs, bytes.length, lastLogs.length);
             }else {
                 logs = bytes;
             }
-            logger.info(Arrays.toString(logs));
             lastLogs = getLogFromBytes(logs, schemaTable, start, end);
         }
         operate(logs,schemaTable,-2,lastLogs.length,start,end);
@@ -82,7 +82,7 @@ public class LogStore {
 
     private byte[] getLogFromBytes(byte[] logs,String schemaTableName,int startId,int endId) throws IOException{
         logger.info("get into the getLogFromBytes");
-        logger.info("log length: "+ logs.length + " the end is : " + logs[logs.length-1]);
+        logger.info("log length: "+ logs.length);
         int start = 0, end ,preLogEnd,logEnd= logs.length;
         end =  findFirstByte(logs,start,END_FLAG,1);
         logger.info("the first /n is :" + end);
@@ -92,6 +92,10 @@ public class LogStore {
         while (true){
             preLogEnd = findNextEnt(logs,logEnd,END_FLAG);
             logger.info("preLogEnd:"+preLogEnd);
+            byte[] schemaBytes = new byte[logEnd-preLogEnd+1];
+            System.arraycopy(logs,preLogEnd,schemaBytes,0,logEnd-preLogEnd);
+            logger.info(Arrays.toString(schemaBytes));
+            logger.info(new String(schemaBytes));
             if (preLogEnd==logEnd)
                 break;
             operate(logs,schemaTableName,preLogEnd,logEnd,startId,endId);
@@ -112,6 +116,10 @@ public class LogStore {
         }
         start = end;
         end = findFirstByte(logs,start,SPLITE_FLAG,1);
+        byte[] schemaBytes = new byte[end-start+1];
+        System.arraycopy(logs,start,schemaBytes,0,end-start);
+        logger.info(Arrays.toString(schemaBytes));
+        logger.info(new String(schemaBytes));
         String operate = getStrFromBytes(logs,start,end);
         start = end;
         logger.info("schemaTable: "+schemaTable+" operate: "+operate);
