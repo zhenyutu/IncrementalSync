@@ -38,10 +38,6 @@ interface Constants {
     // 结果文件目录(client端会用到)
      String RESULT_HOME = "/home/admin/sync_results/77752zr7j5";
 
-    String SERVER_LOG_NAME = "server-77752zr7j5-INFO.log.part";
-
-    String CLIENT_LOG_NAME = "client-77752zr7j5-INFO.log.part";
-
 //     结果文件的命名
      String RESULT_FILE_NAME = "Result.rs";
 

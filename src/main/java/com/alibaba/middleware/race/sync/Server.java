@@ -36,25 +36,20 @@ public class Server {
         initProperties();
         Logger logger = LoggerFactory.getLogger(Server.class);
 
-//        args[0] = "middleware3";
-//        args[1] = "student";
-//        args[2] = "100";
-//        args[3] = "500";
-//
-//        // 第一个参数是Schema Name
-//        logger.info("Schema:" + args[0]);
-//        // 第二个参数是Schema Name
-//        logger.info("table:" + args[1]);
-//        // 第三个参数是start pk Id
-//        logger.info("start:" + args[2]);
-//        // 第四个参数是end pk Id
-//        logger.info("end:" + args[3]);
+        // 第一个参数是Schema Name
+        logger.info("Schema:" + args[0]);
+        // 第二个参数是Schema Name
+        logger.info("table:" + args[1]);
+        // 第三个参数是start pk Id
+        logger.info("start:" + args[2]);
+        // 第四个参数是end pk Id
+        logger.info("end:" + args[3]);
 
         Server server = new Server();
         logger.info("com.alibaba.middleware.race.sync.Server is running....");
 
-//        server.startServer(5527,args[0],args[1],args[2],args[3]);
-        server.startServer(5527,"middleware3","student","100","500");
+        server.startServer(5527,args[0],args[1],args[2],args[3]);
+//        server.startServer(5527,"middleware5","student","100","500");
     }
 
     /**
@@ -69,7 +64,6 @@ public class Server {
     private static void initProperties() {
         System.setProperty("middleware.test.home", Constants.TESTER_HOME);
         System.setProperty("middleware.teamcode", Constants.TEAMCODE);
-        System.setProperty("middleware.logName", Constants.SERVER_LOG_NAME);
         System.setProperty("app.logging.level", Constants.LOG_LEVEL);
     }
 

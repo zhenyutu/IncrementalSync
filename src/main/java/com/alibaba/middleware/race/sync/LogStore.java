@@ -101,6 +101,7 @@ public class LogStore {
         end = findFirstByte(logs,start,SPLITE_FLAG,1);
         String operate = getStrFromBytes(logs,start,end);
         start = end;
+        logger.info("schemaTable: "+schemaTable+" operate: "+operate);
         switch (operate){
             case "I":
                 insertOperate(logs, start, logEnd,startId,endId);
@@ -112,7 +113,7 @@ public class LogStore {
                 deleteOperate(logs, start, logEnd,startId,endId);
                 break;
             default:
-                throw new IOException("error");
+                logger.info("error!");
         }
     }
 

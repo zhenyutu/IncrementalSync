@@ -53,9 +53,22 @@ public class ServerDemoInHandler extends ChannelInboundHandlerAdapter {
         logger.info("com.alibaba.middleware.race.sync.Client said:" + resultStr);
 
         LogStore logStore = LogStore.getInstance();
-        String file = Constants.DATA_HOME+"/1.txt";
+        String file = Constants.DATA_HOME+"/canal.txt";
         logger.info("the file path is:"+file);
-        logStore.pullBytesFormFile(file,schema,table,100,500);
+        logStore.pullBytesFormFile(file,schema,table,Integer.parseInt(start),Integer.parseInt(end));
+        logger.info("finish the parse");
+
+        String message = "finish the parse";
+        Channel channel = Server.getMap().get("127.0.0.1");
+        ByteBuf byteBuf = Unpooled.wrappedBuffer(message.getBytes());
+        channel.writeAndFlush(byteBuf).addListener(new ChannelFutureListener() {
+
+            @Override
+            public void operationComplete(ChannelFuture future) throws Exception {
+                logger.info("Server发送消息成功！");
+            }
+        });
+
 ////        while (true) {
 //            // 向客户端发送消息
 //            String message = (String) getMessage();
