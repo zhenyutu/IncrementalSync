@@ -3,14 +3,12 @@ package com.alibaba.middleware.race.sync;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.File;
 import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.nio.ByteBuffer;
 import java.nio.MappedByteBuffer;
 import java.nio.channels.FileChannel;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -52,13 +50,9 @@ public class LogStore {
         finishArr = new boolean[end-start+1];
         byte[] lastLogs = null;
         byte[] logs = null;
-        File file1 = new File(file);
-        logger.info("file is exist : "+ file1.exists());
         FileChannel channel = new RandomAccessFile(file, "r").getChannel();
         MappedByteBuffer buffer;
         String schemaTable = schema+"|"+table;
-        logger.info("schemaTable : "+schemaTable);
-        logger.info("channel size: : "+channel.size());
 
         for (long i = channel.size(); i > 0 ; i=i-PAGE_SIZE)
         {
@@ -81,20 +75,13 @@ public class LogStore {
     }
 
     private byte[] getLogFromBytes(byte[] logs,String schemaTableName,int startId,int endId) throws IOException{
-        logger.info("get into the getLogFromBytes");
-        logger.info("log length: "+ logs.length);
         int start = 0, end ,preLogEnd,logEnd= logs.length;
         end =  findFirstByte(logs,start,END_FLAG,1);
-        logger.info("the first /n is :" + end);
         byte[] lastLogs = new byte[end+1];
         System.arraycopy(logs,0,lastLogs,0,end+1);
 
         while (true){
             preLogEnd = findNextEnt(logs,logEnd,END_FLAG);
-            logger.info("preLogEnd:"+preLogEnd);
-            byte[] schemaBytes = new byte[logEnd-preLogEnd+1];
-            System.arraycopy(logs,preLogEnd,schemaBytes,0,logEnd-preLogEnd);
-            logger.info(Arrays.toString(schemaBytes));
             if (preLogEnd==logEnd)
                 break;
             operate(logs,schemaTableName,preLogEnd,logEnd,startId,endId);
@@ -105,19 +92,14 @@ public class LogStore {
     }
 
     private void operate(byte[] logs,String schemaTableName,int preLogEnd,int logEnd,int startId,int endId)throws IOException{
-        logger.info("get into the operate");
         int start = findFirstByte(logs,preLogEnd+2,SPLITE_FLAG,2);
         int end = findFirstByte(logs,start,SPLITE_FLAG,2);
         String schemaTable = getStrFromBytes(logs,start,end);
-        logger.info("schemaTable:"+schemaTable);
         if (!schemaTableName.equals(schemaTable)){
             return;
         }
         start = end;
         end = findFirstByte(logs,start,SPLITE_FLAG,1);
-        byte[] schemaBytes = new byte[end-start+1];
-        System.arraycopy(logs,start,schemaBytes,0,end-start);
-        logger.info(Arrays.toString(schemaBytes));
         String operate = getStrFromBytes(logs,start,end);
         start = end;
         logger.info("schemaTable: "+schemaTable+" operate: "+operate);
