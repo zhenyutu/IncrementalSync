@@ -12,7 +12,7 @@ import io.netty.channel.ChannelInboundHandlerAdapter;
  */
 public class ClientDemoInHandler extends ChannelInboundHandlerAdapter {
 
-    private static Logger logger = LoggerFactory.getLogger(ClientDemoInHandler.class);
+    private static Logger logger = LoggerFactory.getLogger(Client.class);
 
     // 接收server端的消息，并打印出来
     @Override

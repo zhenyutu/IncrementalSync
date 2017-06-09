@@ -13,7 +13,7 @@ import io.netty.handler.timeout.IdleStateEvent;
  */
 public class ClientIdleEventHandler extends ChannelDuplexHandler {
 
-    Logger logger = LoggerFactory.getLogger(ClientIdleEventHandler.class);
+    Logger logger = LoggerFactory.getLogger(Client.class);
 
     @Override
     public void userEventTriggered(ChannelHandlerContext ctx, Object msg) throws Exception {

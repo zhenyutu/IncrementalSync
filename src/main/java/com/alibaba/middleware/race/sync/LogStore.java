@@ -17,7 +17,7 @@ import java.util.Map;
  * @author tuzhenyu
  */
 public class LogStore {
-    private static Logger logger = LoggerFactory.getLogger(ServerDemoInHandler.class);
+    private static Logger logger = LoggerFactory.getLogger(Server.class);
 
     private static final LogStore INSTANCE = new LogStore();
     public static LogStore getInstance() {
