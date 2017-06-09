@@ -175,14 +175,14 @@ public class LogStore {
                 insert(logs,addMap.get(id),end,startId);
             }
         }else {
-            if (finishArr[id])
+            if (finishArr[id-startId])
                 return;
             insert(logs,id,end,startId);
         }
     }
 
     private void insert(byte[] logs,int id ,int end,int startId){
-        finishArr[id] = true;
+        finishArr[id-startId] = true;
         ByteBuffer buffer = (ByteBuffer) resultBuffer.position((id-startId)*20);
         buffer.putInt(id);
         for (int n = 0;;n=n+2){
@@ -247,7 +247,7 @@ public class LogStore {
        int lastId = Integer.parseInt(new String(findSingleStr(logs,start,SPLITE_FLAG,2)));
        int id = Integer.parseInt(new String(findSingleStr(logs,position,SPLITE_FLAG,1)));
        if (lastId==id){
-           if (id>=startId&&id<=endId&&!finishArr[id]){ //范围之内且未进行最终操作
+           if (id>=startId&&id<=endId&&!finishArr[id-startId]){ //范围之内且未进行最终操作
                for (;position+2<end;){
                    byte tag = logs[position+3];
                    byte[] tmp = findSingleStr(logs,position,SPLITE_FLAG,3);
@@ -255,7 +255,7 @@ public class LogStore {
                }
            }else if ((id<startId||id>endId)&&addList.contains(id)){ //范围之外，映射进入范围之内
                for (;position+2<end;){
-                   byte tag = logs[position+1];
+                   byte tag = logs[position+3];
                    byte[] tmp = findSingleStr(logs,position,SPLITE_FLAG,3);
                    updateTag(addMap.get(id),tag,tmp,startId);
                }
@@ -263,13 +263,23 @@ public class LogStore {
        }else {
            if (lastId<=endId&&lastId>=startId){
                if (id<startId||id>endId){ //范围之内改到范围之外　删除范围之内的值
-                   finishArr[lastId] = true;
+                   finishArr[lastId-startId] = true;
                }else {                      //范围之内改到范围之内　删除范围之内的值，添加范围之内的值
-                   finishArr[lastId] = true;
-                   finishArr[lastId] = false;
+                   for (;position+2<end;){
+                       byte tag = logs[position+3];
+                       byte[] tmp = findSingleStr(logs,position,SPLITE_FLAG,3);
+                       updateTag(id,tag,tmp,startId);
+                   }
+                   finishArr[lastId-startId] = true;
+                   finishArr[lastId-startId] = false;
                }
            }else {
                if (id>startId&&id<endId){   //范围之外改到范围之内　添加范围之外的值
+                   for (;position+2<end;){
+                       byte tag = logs[position+3];
+                       byte[] tmp = findSingleStr(logs,position,SPLITE_FLAG,3);
+                       updateTag(id,tag,tmp,startId);
+                   }
                    addList.add(lastId);
                    addMap.put(lastId,id);
                }
@@ -278,8 +288,8 @@ public class LogStore {
     }
     private void deleteOperate(byte[] logs,int start,int end,int startId,int endId){
         int lastId = Integer.parseInt(new String(findSingleStr(logs,start,SPLITE_FLAG,2)));
-        if (lastId>startId&&lastId<endId&&!finishArr[lastId])
-            finishArr[lastId] = true;
+        if (lastId>startId&&lastId<endId&&!finishArr[lastId-startId])
+            finishArr[lastId-startId] = true;
 //        ByteBuffer buffer = (ByteBuffer) resultBuffer.position((lastId-startId)*20);
 //        buffer.put(clear);
     }
