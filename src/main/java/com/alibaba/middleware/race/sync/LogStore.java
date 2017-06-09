@@ -10,6 +10,7 @@ import java.nio.ByteBuffer;
 import java.nio.MappedByteBuffer;
 import java.nio.channels.FileChannel;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -71,6 +72,7 @@ public class LogStore {
             }else {
                 logs = bytes;
             }
+            logger.info(Arrays.toString(logs));
             lastLogs = getLogFromBytes(logs, schemaTable, start, end);
         }
         operate(logs,schemaTable,-2,lastLogs.length,start,end);
@@ -79,13 +81,17 @@ public class LogStore {
     }
 
     private byte[] getLogFromBytes(byte[] logs,String schemaTableName,int startId,int endId) throws IOException{
+        logger.info("get into the getLogFromBytes");
+        logger.info("log length: "+ logs.length + " the end is : " + logs[logs.length-1]);
         int start = 0, end ,preLogEnd,logEnd= logs.length;
         end =  findFirstByte(logs,start,END_FLAG,1);
+        logger.info("the first /n is :" + end);
         byte[] lastLogs = new byte[end+1];
         System.arraycopy(logs,0,lastLogs,0,end+1);
 
         while (true){
             preLogEnd = findNextEnt(logs,logEnd,END_FLAG);
+            logger.info("preLogEnd:"+preLogEnd);
             if (preLogEnd==logEnd)
                 break;
             operate(logs,schemaTableName,preLogEnd,logEnd,startId,endId);
@@ -96,9 +102,11 @@ public class LogStore {
     }
 
     private void operate(byte[] logs,String schemaTableName,int preLogEnd,int logEnd,int startId,int endId)throws IOException{
+        logger.info("get into the operate");
         int start = findFirstByte(logs,preLogEnd+2,SPLITE_FLAG,2);
         int end = findFirstByte(logs,start,SPLITE_FLAG,2);
         String schemaTable = getStrFromBytes(logs,start,end);
+        logger.info("schemaTable:"+schemaTable);
         if (!schemaTableName.equals(schemaTable)){
             return;
         }
