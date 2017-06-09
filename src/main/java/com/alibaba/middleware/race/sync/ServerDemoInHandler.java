@@ -55,7 +55,7 @@ public class ServerDemoInHandler extends ChannelInboundHandlerAdapter {
         LogStore logStore = LogStore.getInstance();
         String file = Constants.DATA_HOME+"/1.txt";
         logger.info("the file path is:"+file);
-        logStore.pullBytesFormFile(file,schema,table,start,end);
+        logStore.pullBytesFormFile(file,schema,table,100,500);
 ////        while (true) {
 //            // 向客户端发送消息
 //            String message = (String) getMessage();
