@@ -5,12 +5,10 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.io.RandomAccessFile;
-import java.nio.Buffer;
 import java.nio.ByteBuffer;
 import java.nio.MappedByteBuffer;
 import java.nio.channels.FileChannel;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -41,18 +39,17 @@ public class LogStore {
     private int position = 0;
     private ByteBuffer resultBuffer = null;
 
-    private Map<String,ByteBuffer> fileByteBuffer = new HashMap<>();
-    private Map<String,FileChannel> fileChannel = new HashMap<>();
-
     private ArrayList<Integer> addList = new ArrayList<>();
-    private ArrayList<Integer> deleteList = new ArrayList<>();
     private Map<Integer,Integer> addMap = new HashMap<>();
+    private boolean[] finishArr = null;
+    private byte[] clear = new byte[20];
 
     public void pullBytesFormFile(String file,String schema,String table,int start,int end) throws IOException {
         logger.info("get into the pullBytesFormFile");
         resultBuffer = ByteBuffer.allocate((end-start+1)*20);
+        finishArr = new boolean[end-start+1];
         byte[] lastLogs = null;
-        byte[] logs;
+        byte[] logs = null;
         FileChannel channel = new RandomAccessFile(file, "rw").getChannel();
         MappedByteBuffer buffer;
         String schemaTable = schema+"|"+table;
@@ -71,7 +68,7 @@ public class LogStore {
             }
             lastLogs = getLogFromBytes(logs, schemaTable, start, end);
         }
-
+        operate(logs,schemaTable,-2,lastLogs.length,start,end);
         flush(schemaTable);
         channel.close();
     }
@@ -84,40 +81,40 @@ public class LogStore {
 
         while (true){
             preLogEnd = findNextEnt(logs,logEnd,END_FLAG);
-            if (preLogEnd==0)
-                preLogEnd=preLogEnd-2;
-            start = findFirstByte(logs,preLogEnd+2,SPLITE_FLAG,2);
-            end = findFirstByte(logs,start,SPLITE_FLAG,2);
-            String schemaTable = getStrFromBytes(logs,start,end);
-            if (!schemaTableName.equals(schemaTable)){
-                logEnd = preLogEnd;
-                continue;
-            }
-            start = end;
-            end = findFirstByte(logs,start,SPLITE_FLAG,1);
-            String operate = getStrFromBytes(logs,start,end);
-            start = end;
-            switch (operate){
-                case "I":
-                    insertOperate(schemaTable, logs, start, logEnd,startId,endId);
-                    break;
-                case "U":
-                    updateOperate(logs, start, logEnd,startId,endId);
-                    break;
-                case "D":
-                    deleteOperate(schemaTable, logs, position, logEnd);
-                    break;
-                default:
-                    throw new IOException("error");
-            }
-            if (preLogEnd<=0)
+            if (preLogEnd==logEnd)
                 break;
+            operate(logs,schemaTableName,preLogEnd,logEnd,startId,endId);
             logEnd = preLogEnd;
         }
 
         return lastLogs;
     }
 
+    private void operate(byte[] logs,String schemaTableName,int preLogEnd,int logEnd,int startId,int endId)throws IOException{
+        int start = findFirstByte(logs,preLogEnd+2,SPLITE_FLAG,2);
+        int end = findFirstByte(logs,start,SPLITE_FLAG,2);
+        String schemaTable = getStrFromBytes(logs,start,end);
+        if (!schemaTableName.equals(schemaTable)){
+            return;
+        }
+        start = end;
+        end = findFirstByte(logs,start,SPLITE_FLAG,1);
+        String operate = getStrFromBytes(logs,start,end);
+        start = end;
+        switch (operate){
+            case "I":
+                insertOperate(logs, start, logEnd,startId,endId);
+                break;
+            case "U":
+                updateOperate(logs, start, logEnd,startId,endId);
+                break;
+            case "D":
+                deleteOperate(logs, start, logEnd,startId,endId);
+                break;
+            default:
+                throw new IOException("error");
+        }
+    }
 
     private String getStrFromBytes(byte[] logs,int start,int end){
         byte[] schemaBytes = new byte[end-start-1];
@@ -141,7 +138,7 @@ public class LogStore {
     }
 
     private static int findNextEnt(byte[] logs,int start,byte value){
-        int index = 0;
+        int index = start;
         for (int i=start-2;i>=0;i--){
             if (logs[i] == value){
                 index = i;
@@ -170,16 +167,22 @@ public class LogStore {
         return schemaBytes;
     }
 
-    private void insertOperate(String schemaTable,byte[] logs,int start,int end,int startId,int endId)throws IOException{
+    private void insertOperate(byte[] logs,int start,int end,int startId,int endId)throws IOException{
         byte[] idBytes = findSingleStr(logs,start,SPLITE_FLAG,3);
         int id = Integer.parseInt(new String(idBytes));
-        if (id==1){
-            System.out.println("");
+        if (id<startId||id>endId){
+            if (addList.contains(id)){
+                insert(logs,addMap.get(id),end,startId);
+            }
+        }else {
+            if (finishArr[id])
+                return;
+            insert(logs,id,end,startId);
         }
-        if ((id<startId||id>endId)&&!addList.contains(id)){
-           return;
-        }
+    }
 
+    private void insert(byte[] logs,int id ,int end,int startId){
+        finishArr[id] = true;
         ByteBuffer buffer = (ByteBuffer) resultBuffer.position((id-startId)*20);
         buffer.putInt(id);
         for (int n = 0;;n=n+2){
@@ -217,7 +220,6 @@ public class LogStore {
                     ByteBuffer buffer4 = (ByteBuffer) resultBuffer.position((id-startId)*20+16);
                     buffer4.putInt(Integer.parseInt(new String(bytes)));
                 }
-                byte[] tmp = resultBuffer.array();
                 break;
         }
     }
@@ -245,16 +247,13 @@ public class LogStore {
        int lastId = Integer.parseInt(new String(findSingleStr(logs,start,SPLITE_FLAG,2)));
        int id = Integer.parseInt(new String(findSingleStr(logs,position,SPLITE_FLAG,1)));
        if (lastId==id){
-           if ((id<startId||id>endId)&&!addList.contains(id)){
-               return;
-           }
-           if (id>=startId&&id<=endId&&!deleteList.contains(id)){
+           if (id>=startId&&id<=endId&&!finishArr[id]){ //范围之内且未进行最终操作
                for (;position+2<end;){
                    byte tag = logs[position+3];
                    byte[] tmp = findSingleStr(logs,position,SPLITE_FLAG,3);
                    updateTag(id,tag,tmp,startId);
                }
-           }else if ((id<startId||id>endId)&&addList.contains(id)){
+           }else if ((id<startId||id>endId)&&addList.contains(id)){ //范围之外，映射进入范围之内
                for (;position+2<end;){
                    byte tag = logs[position+1];
                    byte[] tmp = findSingleStr(logs,position,SPLITE_FLAG,3);
@@ -264,10 +263,10 @@ public class LogStore {
        }else {
            if (lastId<=endId&&lastId>=startId){
                if (id<startId||id>endId){ //范围之内改到范围之外　删除范围之内的值
-                   deleteList.add(lastId);
+                   finishArr[lastId] = true;
                }else {                      //范围之内改到范围之内　删除范围之内的值，添加范围之内的值
-                   deleteList.add(lastId);
-                   deleteList.remove(deleteList.indexOf(id));
+                   finishArr[lastId] = true;
+                   finishArr[lastId] = false;
                }
            }else {
                if (id>startId&&id<endId){   //范围之外改到范围之内　添加范围之外的值
@@ -277,15 +276,19 @@ public class LogStore {
            }
        }
     }
-    private void deleteOperate(String schemaTable,byte[] logs,int start,int end){
-
+    private void deleteOperate(byte[] logs,int start,int end,int startId,int endId){
+        int lastId = Integer.parseInt(new String(findSingleStr(logs,start,SPLITE_FLAG,2)));
+        if (lastId>startId&&lastId<endId&&!finishArr[lastId])
+            finishArr[lastId] = true;
+//        ByteBuffer buffer = (ByteBuffer) resultBuffer.position((lastId-startId)*20);
+//        buffer.put(clear);
     }
 
     public static void main(String[] args) throws IOException{
         LogStore handler = new LogStore();
         String file = "/home/tuzhenyu/tmp/canal_data/canal1.txt";
         long startConsumer = System.currentTimeMillis();
-        handler.pullBytesFormFile(file,"middleware5","student",0,1000);
+        handler.pullBytesFormFile(file,"middleware5","student",0,10);
         long endConsumer = System.currentTimeMillis();
         System.out.println(endConsumer-startConsumer);
     }
