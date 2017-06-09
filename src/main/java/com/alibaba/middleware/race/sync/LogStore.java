@@ -3,6 +3,7 @@ package com.alibaba.middleware.race.sync;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.File;
 import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.nio.ByteBuffer;
@@ -50,9 +51,13 @@ public class LogStore {
         finishArr = new boolean[end-start+1];
         byte[] lastLogs = null;
         byte[] logs = null;
-        FileChannel channel = new RandomAccessFile(file, "rw").getChannel();
+        File file1 = new File(file);
+        logger.info("file is exist : "+ file1.exists());
+        FileChannel channel = new RandomAccessFile(file, "r").getChannel();
         MappedByteBuffer buffer;
         String schemaTable = schema+"|"+table;
+        logger.info("schemaTable : "+schemaTable);
+        logger.info("channel size: : "+channel.size());
 
         for (long i = channel.size(); i > 0 ; i=i-PAGE_SIZE)
         {
