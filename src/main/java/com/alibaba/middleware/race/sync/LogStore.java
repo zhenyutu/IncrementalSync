@@ -195,34 +195,6 @@ public class LogStore {
             }
         }
     }
-//    private void insertTag(int id,byte tag,byte[] bytes,int startId){
-//        switch (tag){
-//            case FIRST_FLAG:
-//                if (resultBuffer.get((id-startId)*20+4)==EMPTY_FLAG){
-//                    ByteBuffer buffer1 = (ByteBuffer) resultBuffer.position((id-startId)*20+4);
-//                    buffer1.put(bytes);
-//                }
-//                break;
-//            case LAST_FLAG:
-//                if (resultBuffer.get((id-startId)*20+7)==EMPTY_FLAG){
-//                    ByteBuffer buffer2 = (ByteBuffer) resultBuffer.position((id-startId)*20+7);
-//                    buffer2.put(bytes);
-//                }
-//                break;
-//            case SEX_FLAG:
-//                if (resultBuffer.get((id-startId)*20+13)==EMPTY_FLAG){
-//                    ByteBuffer buffer3 = (ByteBuffer) resultBuffer.position((id-startId)*20+13);
-//                    buffer3.put(bytes);
-//                }
-//                break;
-//            case SCORE_FLAG:
-//                if (resultBuffer.get((id-startId)*20+16)==EMPTY_FLAG){
-//                    ByteBuffer buffer4 = (ByteBuffer) resultBuffer.position((id-startId)*20+16);
-//                    buffer4.putInt(Integer.parseInt(new String(bytes)));
-//                }
-//                break;
-//        }
-//    }
     private void updateTag(int id,byte tag,byte[] bytes,int startId){
         switch (tag){
             case FIRST_FLAG:
@@ -282,7 +254,7 @@ public class LogStore {
                    finishArr[(int)lastId-startId] = false;
                }
            }else {
-               if (id>startId&&id<endId){   //范围之外改到范围之内　添加范围之外的值
+               if (id>=startId&&id<=endId){   //范围之外改到范围之内　添加范围之外的值
                    for (;position+2<end;){
                        byte tag = logs[position+3];
                        byte[] tmp = findSingleStr(logs,position,SPLITE_FLAG,3);
@@ -290,6 +262,18 @@ public class LogStore {
                    }
                    addList.add(lastId);
                    addMap.put(lastId,(int)id);
+               }else {
+                   if (addList.contains(id)){
+                       for (;position+2<end;){
+                           byte tag = logs[position+3];
+                           byte[] tmp = findSingleStr(logs,position,SPLITE_FLAG,3);
+                           updateTag(addMap.get(id),tag,tmp,startId);
+                       }
+                       addList.add(lastId);
+                       addMap.put(lastId,addMap.get(id));
+                       addList.remove(id);
+                       addMap.remove(id);
+                   }
                }
            }
        }
@@ -305,8 +289,9 @@ public class LogStore {
     public static void main(String[] args) throws IOException{
         LogStore handler = new LogStore();
         String file = "/home/tuzhenyu/tmp/canal_data/1/canal.txt";
+//        String file = "/home/tuzhenyu/tmp/canal_data/canal2.txt";
         long startConsumer = System.currentTimeMillis();
-        handler.pullBytesFormFile(file,"middleware3","student",100,200);
+        handler.pullBytesFormFile(file,"middleware5","student",100,200);
         long endConsumer = System.currentTimeMillis();
         System.out.println(endConsumer-startConsumer);
     }
