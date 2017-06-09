@@ -189,13 +189,41 @@ public class LogStore {
             if (position+2<end){
                 byte tag = logs[position+3];
                 byte[] tmp = findSingleStr(logs,position,SPLITE_FLAG,3);
-                insertTag(id,tag,tmp,startId);
+                updateTag(id,tag,tmp,startId);
             }else {
                 break;
             }
         }
     }
-    private void insertTag(int id,byte tag,byte[] bytes,int startId){
+//    private void insertTag(int id,byte tag,byte[] bytes,int startId){
+//        switch (tag){
+//            case FIRST_FLAG:
+//                if (resultBuffer.get((id-startId)*20+4)==EMPTY_FLAG){
+//                    ByteBuffer buffer1 = (ByteBuffer) resultBuffer.position((id-startId)*20+4);
+//                    buffer1.put(bytes);
+//                }
+//                break;
+//            case LAST_FLAG:
+//                if (resultBuffer.get((id-startId)*20+7)==EMPTY_FLAG){
+//                    ByteBuffer buffer2 = (ByteBuffer) resultBuffer.position((id-startId)*20+7);
+//                    buffer2.put(bytes);
+//                }
+//                break;
+//            case SEX_FLAG:
+//                if (resultBuffer.get((id-startId)*20+13)==EMPTY_FLAG){
+//                    ByteBuffer buffer3 = (ByteBuffer) resultBuffer.position((id-startId)*20+13);
+//                    buffer3.put(bytes);
+//                }
+//                break;
+//            case SCORE_FLAG:
+//                if (resultBuffer.get((id-startId)*20+16)==EMPTY_FLAG){
+//                    ByteBuffer buffer4 = (ByteBuffer) resultBuffer.position((id-startId)*20+16);
+//                    buffer4.putInt(Integer.parseInt(new String(bytes)));
+//                }
+//                break;
+//        }
+//    }
+    private void updateTag(int id,byte tag,byte[] bytes,int startId){
         switch (tag){
             case FIRST_FLAG:
                 if (resultBuffer.get((id-startId)*20+4)==EMPTY_FLAG){
@@ -216,30 +244,10 @@ public class LogStore {
                 }
                 break;
             case SCORE_FLAG:
-                if (resultBuffer.get((id-startId)*20+16)==EMPTY_FLAG){
+                if (resultBuffer.get((id-startId)*20+19)==EMPTY_FLAG){
                     ByteBuffer buffer4 = (ByteBuffer) resultBuffer.position((id-startId)*20+16);
                     buffer4.putInt(Integer.parseInt(new String(bytes)));
                 }
-                break;
-        }
-    }
-    private void updateTag(int id,byte tag,byte[] bytes,int startId){
-        switch (tag){
-            case FIRST_FLAG:
-                ByteBuffer buffer1 = (ByteBuffer) resultBuffer.position((id-startId)*20+4);
-                buffer1.put(bytes);
-                break;
-            case LAST_FLAG:
-                ByteBuffer buffer2 = (ByteBuffer) resultBuffer.position((id-startId)*20+7);
-                buffer2.put(bytes);
-                break;
-            case SEX_FLAG:
-                ByteBuffer buffer3 = (ByteBuffer) resultBuffer.position((id-startId)*20+13);
-                buffer3.put(bytes);
-                break;
-            case SCORE_FLAG:
-                ByteBuffer buffer4 = (ByteBuffer) resultBuffer.position((id-startId)*20+16);
-                buffer4.putInt(Integer.parseInt(new String(bytes)));
                 break;
         }
     }
@@ -262,7 +270,7 @@ public class LogStore {
            }
        }else {
            if (lastId<=endId&&lastId>=startId){
-               if (id<startId||id>endId){ //范围之内改到范围之外　删除范围之内的值
+               if ((id<startId||id>endId)&&!addList.contains(id)){ //范围之内改到范围之外　删除范围之内的值
                    finishArr[(int)lastId-startId] = true;
                }else {                      //范围之内改到范围之内　删除范围之内的值，添加范围之内的值
                    for (;position+2<end;){
@@ -296,9 +304,9 @@ public class LogStore {
 
     public static void main(String[] args) throws IOException{
         LogStore handler = new LogStore();
-        String file = "/home/tuzhenyu/tmp/canal_data/canal1.txt";
+        String file = "/home/tuzhenyu/tmp/canal_data/1/canal.txt";
         long startConsumer = System.currentTimeMillis();
-        handler.pullBytesFormFile(file,"middleware5","student",0,10);
+        handler.pullBytesFormFile(file,"middleware3","student",100,200);
         long endConsumer = System.currentTimeMillis();
         System.out.println(endConsumer-startConsumer);
     }

@@ -12,7 +12,7 @@ import java.util.Arrays;
 public class FileReader {
     public static void main(String[] args) {
         try {
-            FileInputStream in = new FileInputStream("/home/tuzhenyu/work/middlewareTester/middle/middleware5|student.txt");
+            FileInputStream in = new FileInputStream("/home/tuzhenyu/work/middlewareTester/middle/middleware3|student.txt");
             FileChannel fc = in.getChannel();
             MappedByteBuffer buffer = fc.map(FileChannel.MapMode.READ_ONLY, 0, fc.size());
             byte[] all = new byte[700];
@@ -35,7 +35,7 @@ public class FileReader {
                 int score = buffer.getInt();
                 System.out.println(score);
                 i++;
-                if (i>30)
+                if (i>100)
                     break;
             }
         } catch (Exception e) {
