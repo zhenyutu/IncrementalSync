@@ -17,7 +17,7 @@ import java.util.Map;
  * @author tuzhenyu
  */
 public class LogStore {
-    private static Logger logger = LoggerFactory.getLogger(Server.class);
+    private static Logger logger = LoggerFactory.getLogger(LogStore.class);
 
     private static final LogStore INSTANCE = new LogStore();
     public static LogStore getInstance() {
@@ -44,10 +44,13 @@ public class LogStore {
     private boolean[] finishArr = null;
     private byte[] clear = new byte[20];
 
-    public void pullBytesFormFile(String file,String schema,String table,int start,int end) throws IOException {
-        logger.info("get into the pullBytesFormFile");
+    public void init(int start,int end){
         resultBuffer = ByteBuffer.allocate((end-start+1)*20);
         finishArr = new boolean[end-start+1];
+    }
+
+    public void pullBytesFormFile(String file,String schema,String table,int start,int end) throws IOException {
+        logger.info("get into the pullBytesFormFile");
         byte[] lastLogs = null;
         byte[] logs = null;
         FileChannel channel = new RandomAccessFile(file, "r").getChannel();
@@ -60,7 +63,6 @@ public class LogStore {
             byte[] bytes = new byte[buffer.remaining()];
             buffer.get(bytes);
             if (lastLogs != null){
-                logger.info("the last log is not null");
                 logs = new byte[lastLogs.length+bytes.length];
                 System.arraycopy(bytes, 0, logs, 0, bytes.length);
                 System.arraycopy(lastLogs, 0, logs, bytes.length, lastLogs.length);
@@ -70,7 +72,6 @@ public class LogStore {
             lastLogs = getLogFromBytes(logs, schemaTable, start, end);
         }
         operate(logs,schemaTable,-2,lastLogs.length,start,end);
-        flush(schemaTable);
         channel.close();
     }
 
@@ -102,7 +103,6 @@ public class LogStore {
         end = findFirstByte(logs,start,SPLITE_FLAG,1);
         String operate = getStrFromBytes(logs,start,end);
         start = end;
-        logger.info("schemaTable: "+schemaTable+" operate: "+operate);
         switch (operate){
             case "I":
                 insertOperate(logs, start, logEnd,startId,endId);
@@ -290,10 +290,17 @@ public class LogStore {
 
     public static void main(String[] args) throws IOException{
         LogStore handler = new LogStore();
-        String file = "/home/tuzhenyu/tmp/canal_data/1/canal.txt";
+
 //        String file = "/home/tuzhenyu/tmp/canal_data/canal2.txt";
         long startConsumer = System.currentTimeMillis();
-        handler.pullBytesFormFile(file,"middleware5","student",100,200);
+        handler.init(100,200);
+        for (int i=9;i>=0;i--){
+            String file = "/home/tuzhenyu/tmp/canal_data/1/canal_0"+i+".txt";
+            handler.pullBytesFormFile(file,"middleware5","student",100,200);
+        }
+        long endConsumer1 = System.currentTimeMillis();
+        System.out.println(endConsumer1-startConsumer);
+        handler.flush("middleware5|student");
         long endConsumer = System.currentTimeMillis();
         System.out.println(endConsumer-startConsumer);
     }
