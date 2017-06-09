@@ -53,7 +53,7 @@ public class ServerDemoInHandler extends ChannelInboundHandlerAdapter {
         logger.info("com.alibaba.middleware.race.sync.Client said:" + resultStr);
 
         LogStore logStore = LogStore.getInstance();
-        String file = Constants.DATA_HOME+"/canal.txt";
+        String file = Constants.DATA_HOME+"/1.txt";
         logger.info("the file path is:"+file);
         logStore.pullBytesFormFile(file,schema,table,Integer.parseInt(start),Integer.parseInt(end));
         logger.info("finish the parse");
