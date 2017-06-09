@@ -95,7 +95,6 @@ public class LogStore {
             byte[] schemaBytes = new byte[logEnd-preLogEnd+1];
             System.arraycopy(logs,preLogEnd,schemaBytes,0,logEnd-preLogEnd);
             logger.info(Arrays.toString(schemaBytes));
-            logger.info(new String(schemaBytes));
             if (preLogEnd==logEnd)
                 break;
             operate(logs,schemaTableName,preLogEnd,logEnd,startId,endId);
@@ -119,7 +118,6 @@ public class LogStore {
         byte[] schemaBytes = new byte[end-start+1];
         System.arraycopy(logs,start,schemaBytes,0,end-start);
         logger.info(Arrays.toString(schemaBytes));
-        logger.info(new String(schemaBytes));
         String operate = getStrFromBytes(logs,start,end);
         start = end;
         logger.info("schemaTable: "+schemaTable+" operate: "+operate);
