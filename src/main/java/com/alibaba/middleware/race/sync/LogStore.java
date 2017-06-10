@@ -49,13 +49,12 @@ public class LogStore {
         finishArr = new boolean[end-start+1];
     }
 
-    public void pullBytesFormFile(String file,String schema,String table,int start,int end) throws IOException {
+    public void pullBytesFormFile(String file,String schemaTable,int start,int end) throws IOException {
         logger.info("get into the pullBytesFormFile");
         byte[] lastLogs = null;
         byte[] logs = null;
         FileChannel channel = new RandomAccessFile(file, "r").getChannel();
         MappedByteBuffer buffer;
-        String schemaTable = schema+"|"+table;
 
         for (long i = channel.size(); i > 0 ; i=i-PAGE_SIZE)
         {
@@ -284,43 +283,65 @@ public class LogStore {
         long lastId = Long.parseLong(new String(findSingleStr(logs,start,SPLITE_FLAG,2)));
         if (lastId>startId&&lastId<endId&&!finishArr[(int)lastId-startId])
             finishArr[(int) lastId-startId] = true;
-//        ByteBuffer buffer = (ByteBuffer) resultBuffer.position((lastId-startId)*20);
-//        buffer.put(clear);
     }
 
-    public static void main(String[] args) throws IOException{
-        LogStore handler = new LogStore();
-
-//        String file = "/home/tuzhenyu/tmp/canal_data/canal2.txt";
-        long startConsumer = System.currentTimeMillis();
-        handler.init(100,200);
-        for (int i=9;i>=0;i--){
-            String file = "/home/tuzhenyu/tmp/canal_data/1/canal_0"+i+".txt";
-            handler.pullBytesFormFile(file,"middleware5","student",100,200);
+    private ByteBuffer parse(){
+        ByteBuffer buffer = (ByteBuffer)resultBuffer.position(0);
+        ByteBuffer result = ByteBuffer.allocate(buffer.capacity());
+        int id;
+        byte[] name = new byte[3];
+        while(buffer.hasRemaining()){
+            id = buffer.getInt();
+            if (id!=0){
+                result.put(String.valueOf(id).getBytes());
+                result.put(SPACE_FLAG);
+                buffer.get(name);
+                result.put(name);
+                result.put(SPACE_FLAG);
+                buffer.get(name);
+                result.put(name);
+                buffer.get(name);
+                if ((name[1]|name[2])!=0) {
+                    result.put(name);
+                }
+                result.put(SPACE_FLAG);
+                buffer.get(name);
+                result.put(name);
+                result.put(SPACE_FLAG);
+                id = buffer.getInt();
+                result.put(String.valueOf(id).getBytes());
+                result.put(END_FLAG);
+            }
         }
-        long endConsumer1 = System.currentTimeMillis();
-        System.out.println(endConsumer1-startConsumer);
-        handler.flush("middleware5|student");
-        long endConsumer = System.currentTimeMillis();
-        System.out.println(endConsumer-startConsumer);
+
+        result.flip();
+        return result;
     }
 
     private void flush(String schemaTable) throws IOException{
         String fileName = Constants.MIDDLE_HOME+"/"+schemaTable+".txt";
         FileChannel channel = new RandomAccessFile(fileName, "rw").getChannel();
-        ByteBuffer buffer = (ByteBuffer)resultBuffer.position(0);
+        ByteBuffer buffer = parse();
         channel.write(buffer);
     }
 
-    private boolean compareTo(String str1,String str2){
-        int length1 = str1.length();
-        int length2 = str2.length();
-        if (length1<length2)
-            return false;
-        else if (length1>length2)
-            return true;
-        else {
-            return str1.compareTo(str2)>0;
+    public void startPullFile(String schema,String table,int start,int end) throws IOException{
+        long startConsumer = System.currentTimeMillis();
+        String schemaTable = schema + "|" + table;
+        init(start,end);
+        for (int i=9;i>=0;i--){
+            String file = "/home/tuzhenyu/tmp/canal_data/1/canal_0"+i+".txt";
+            pullBytesFormFile(file,schemaTable,100,200);
         }
+        flush("middleware5|student");
+        long endConsumer = System.currentTimeMillis();
+        System.out.println(endConsumer-startConsumer);
     }
+
+    public static void main(String[] args) throws IOException{
+        LogStore handler = getInstance();
+        handler.startPullFile("middleware5","student",100,200);
+    }
+
+
 }
