@@ -52,7 +52,7 @@ public class LogStore {
         resultBuffer = ByteBuffer.allocate((end-start+1)*20);
         finishArr = new boolean[end-start+1];
 
-        String f = path + "/1.txt";
+        String f = path + "/2.txt";
         ByteBuffer b = ByteBuffer.allocate(800);
         new RandomAccessFile(f, "r").getChannel().read(b);
         logger.info(Arrays.toString(b.array()));
@@ -69,6 +69,7 @@ public class LogStore {
                 FileChannel channel = fileChannelMap.get(fileNum);
                 if (channel==null){
                     String file = path + "/" + fileNum + ".txt";
+                    logger.info(file);
                     channel = new RandomAccessFile(file, "r").getChannel();
                     fileChannelMap.put(fileNum,channel);
                 }
@@ -118,7 +119,6 @@ public class LogStore {
     }
 
     private byte[] parseBytesFromQueue(byte[] bytes,byte[] lastLogs,String schemaTable,int start,int end)throws IOException{
-        logger.info("get into the parseBytesFromQueue");
         byte[] logs = null;
 
         if (lastLogs != null){
