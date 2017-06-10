@@ -78,7 +78,7 @@ public class LogStore {
                     filePosition = channel.size();
                     filePositionMap.put(fileNum,filePosition);
                 }
-                if (fileNum==9){
+                if (fileNum==9||fileNum==8){
                     logger.info("filePosition:"+filePosition);
                 }
                 buffer = channel.map(FileChannel.MapMode.READ_ONLY, Math.max(filePosition-PAGE_SIZE , 0), Math.min(filePosition , PAGE_SIZE));
