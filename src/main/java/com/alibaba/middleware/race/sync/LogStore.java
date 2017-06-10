@@ -37,7 +37,7 @@ public class LogStore {
     private ArrayBlockingQueue<byte[]> bufferQueue = new ArrayBlockingQueue<>(4);
     private Map<Integer,Long> filePositionMap = new HashMap<>();
     private Map<Integer,FileChannel> fileChannelMap = new HashMap<>();
-    private volatile int fileNum = 9;
+    private volatile int fileNum = 10;
 
     private boolean running = false;
     private int position = 0;
@@ -68,7 +68,7 @@ public class LogStore {
                     break;
                 FileChannel channel = fileChannelMap.get(fileNum);
                 if (channel==null){
-                    String file = path + "/canal_0" + fileNum + ".txt";
+                    String file = path + "/" + fileNum + ".txt";
                     channel = new RandomAccessFile(file, "r").getChannel();
                     fileChannelMap.put(fileNum,channel);
                 }
@@ -86,7 +86,7 @@ public class LogStore {
                 bufferQueue.put(bytes);
 
                 if (filePosition<0){
-                    if (fileNum>0){
+                    if (fileNum>1){
                         fileChannelMap.get(fileNum).close();
                         fileNum--;
                     }
@@ -101,6 +101,7 @@ public class LogStore {
     }
 
     public void parseBytes(String schemaTable,int start,int end)throws Exception{
+        logger.info("get into the parseBytes");
         byte[] logs;
         byte[] lastLogs = null;
         int num = 0;
@@ -117,6 +118,7 @@ public class LogStore {
     }
 
     private byte[] parseBytesFromQueue(byte[] bytes,byte[] lastLogs,String schemaTable,int start,int end)throws IOException{
+        logger.info("get into the parseBytesFromQueue");
         byte[] logs = null;
 
         if (lastLogs != null){
