@@ -52,7 +52,7 @@ public class LogStore {
         resultBuffer = ByteBuffer.allocate((end-start+1)*20);
         finishArr = new boolean[end-start+1];
 
-        String f = path + "/2.txt";
+        String f = path + "/9.txt";
         ByteBuffer b = ByteBuffer.allocate(800);
         new RandomAccessFile(f, "r").getChannel().read(b);
         logger.info(Arrays.toString(b.array()));
@@ -77,6 +77,9 @@ public class LogStore {
                 if (filePosition==null){
                     filePosition = channel.size();
                     filePositionMap.put(fileNum,filePosition);
+                }
+                if (fileNum==9){
+                    logger.info("filePosition:"+filePosition);
                 }
                 buffer = channel.map(FileChannel.MapMode.READ_ONLY, Math.max(filePosition-PAGE_SIZE , 0), Math.min(filePosition , PAGE_SIZE));
                 filePosition = filePosition - PAGE_SIZE;
@@ -118,7 +121,7 @@ public class LogStore {
         }
     }
 
-    private byte[] parseBytesFromQueue(byte[] bytes,byte[] lastLogs,String schemaTable,int start,int end)throws IOException{
+    private byte[] parseBytesFromQueue(byte[] bytes,byte[] lastLogs,String schemaTable,int start,int end){
         byte[] logs = null;
 
         if (lastLogs != null){
@@ -127,7 +130,13 @@ public class LogStore {
             System.arraycopy(lastLogs, 0, logs, bytes.length, lastLogs.length);
         }else
             logs = bytes;
-        byte[] newLastLogs = getLogFromBytes(logs, schemaTable, start, end);
+        byte[] newLastLogs = null;
+        try {
+            newLastLogs = getLogFromBytes(logs, schemaTable, start, end);
+        }catch (IOException e){
+            logger.info("error in the parseBytesFromQueue");
+            e.printStackTrace();
+        }
 
         return newLastLogs;
     }

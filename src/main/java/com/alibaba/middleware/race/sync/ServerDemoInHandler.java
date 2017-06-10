@@ -12,6 +12,7 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
 
 import java.nio.ByteBuffer;
+import java.util.Arrays;
 
 /**
  * 处理client端的请求 Created by wanshao on 2017/5/25.
@@ -72,9 +73,8 @@ public class ServerDemoInHandler extends ChannelInboundHandlerAdapter {
 //        logStore.flush(buffer);
         long endConsumer = System.currentTimeMillis();
         logger.info("the cost time: "+(endConsumer-startConsumer));
-        logger.info("the cost time: "+(endConsumer-startConsumer));
         logger.info("finish the parse");
-
+        logger.warn(Arrays.toString(buffer.array()));
 //        String message = "finish the parse";
         Channel channel = Server.getMap().get("127.0.0.1");
 //        ByteBuf byteBuf = Unpooled.wrappedBuffer(message.getBytes());
