@@ -9,6 +9,7 @@ import java.nio.ByteBuffer;
 import java.nio.MappedByteBuffer;
 import java.nio.channels.FileChannel;
 import java.util.*;
+import java.util.concurrent.ArrayBlockingQueue;
 
 /**
  * Created by tuzhenyu on 17-6-7.
@@ -33,11 +34,7 @@ public class LogStore {
     private static final byte SCORE_FLAG = (byte)111;
     private static final byte EMPTY_FLAG = (byte)0;
 
-    private Map<Integer,byte[]> bufferMap = new HashMap<>(20);
-    private final Object consumer = new Object();
-    private int consumerCount = 0;
-    private volatile int producerCount = 0;
-
+    private ArrayBlockingQueue<byte[]> bufferQueue = new ArrayBlockingQueue<>(4);
     private Map<Integer,Long> filePositionMap = new HashMap<>();
     private Map<Integer,FileChannel> fileChannelMap = new HashMap<>();
     private volatile int fileNum = 9;
@@ -60,8 +57,6 @@ public class LogStore {
 
         while (true){
             MappedByteBuffer buffer;
-            Long filePosition;
-            int index;
             synchronized(this){
                 if (running)
                     break;
@@ -71,53 +66,30 @@ public class LogStore {
                     channel = new RandomAccessFile(file, "r").getChannel();
                     fileChannelMap.put(fileNum,channel);
                 }
-                filePosition = filePositionMap.get(fileNum);
+                Long filePosition = filePositionMap.get(fileNum);
                 if (filePosition==null){
                     filePosition = channel.size();
                     filePositionMap.put(fileNum,filePosition);
                 }
-                index = producerCount;
-                producerCount++;
-                logger.info(Thread.currentThread().getName()+" index:"+index+" position:"+filePosition);
                 buffer = channel.map(FileChannel.MapMode.READ_ONLY, Math.max(filePosition-PAGE_SIZE , 0), Math.min(filePosition , PAGE_SIZE));
                 filePosition = filePosition - PAGE_SIZE;
                 filePositionMap.put(fileNum,filePosition);
+
+                byte[] bytes = new byte[buffer.remaining()];
+                buffer.get(bytes);
+                bufferQueue.put(bytes);
+
                 if (filePosition<0){
                     if (fileNum>0){
                         fileChannelMap.get(fileNum).close();
                         fileNum--;
                     }
                     else{
-                        byte[] bytes = new byte[buffer.remaining()];
-                        buffer.get(bytes);
-                        bufferMap.put(index,bytes);
-
                         running = true;
                         break;
                     }
                 }
             }
-
-            byte[] bytes = new byte[buffer.remaining()];
-            buffer.get(bytes);
-            bufferMap.put(index,bytes);
-            int tmp = 0;
-            if (tmp%10==0){
-                synchronized (consumer){
-                    consumer.notify();
-                }
-            }
-
-//            if (filePosition<0){
-//                if (fileNum>0){
-//                    fileChannelMap.get(fileNum).close();
-//                    fileNum--;
-//                }
-//                else{
-//                    running = true;
-//                    break;
-//                }
-//            }
 
         }
     }
@@ -127,20 +99,7 @@ public class LogStore {
         byte[] lastLogs = null;
         int num = 0;
         while (true){
-            synchronized (consumer){
-                for (;;){
-                    byte[] logsTmp = bufferMap.get(consumerCount);
-                    bufferMap.put(consumerCount,null);
-                    if (logsTmp==null)
-                        consumer.wait();
-                    else{
-                        logs = logsTmp;
-                        consumerCount++;
-                        break;
-                    }
-                }
-            }
-            logger.info("consume index:"+consumerCount);
+            logs = bufferQueue.take();
             lastLogs = parseBytesFromQueue(logs,lastLogs,schemaTable,start,end);
             if(logs.length != PAGE_SIZE){
                 operate(logs,schemaTable,-2,lastLogs.length,start,end);
@@ -316,59 +275,59 @@ public class LogStore {
         }
     }
     private void updateOperate(byte[] logs,int start,int end,int startId,int endId){
-       long lastId = Long.parseLong(new String(findSingleStr(logs,start,SPLITE_FLAG,2)));
-       long id = Long.parseLong(new String(findSingleStr(logs,position,SPLITE_FLAG,1)));
-       if (lastId==id){
-           if (id>startId&&id<endId&&!finishArr[(int)id-startId]){ //范围之内且未进行最终操作
-               for (;position+2<end;){
-                   byte tag = logs[position+3];
-                   byte[] tmp = findSingleStr(logs,position,SPLITE_FLAG,3);
-                   updateTag((int)id,tag,tmp,startId);
-               }
-           }else if ((id<=startId||id>=endId)&&addList.contains(id)){ //范围之外，映射进入范围之内
-               for (;position+2<end;){
-                   byte tag = logs[position+3];
-                   byte[] tmp = findSingleStr(logs,position,SPLITE_FLAG,3);
-                   updateTag(addMap.get(id),tag,tmp,startId);
-               }
-           }
-       }else {
-           if (lastId<endId&&lastId>startId){
-               if ((id<=startId||id>=endId)&&!addList.contains(id)){ //范围之内改到范围之外　删除范围之内的值
-                   finishArr[(int)lastId-startId] = true;
-               }else {                      //范围之内改到范围之内　删除范围之内的值，添加范围之内的值
-                   for (;position+2<end;){
-                       byte tag = logs[position+3];
-                       byte[] tmp = findSingleStr(logs,position,SPLITE_FLAG,3);
-                       updateTag((int)id,tag,tmp,startId);
-                   }
-                   finishArr[(int)lastId-startId] = true;
-                   finishArr[(int)lastId-startId] = false;
-               }
-           }else {
-               if (id>startId&&id<endId){   //范围之外改到范围之内　添加范围之外的值
-                   for (;position+2<end;){
-                       byte tag = logs[position+3];
-                       byte[] tmp = findSingleStr(logs,position,SPLITE_FLAG,3);
-                       updateTag((int)id,tag,tmp,startId);
-                   }
-                   addList.add(lastId);
-                   addMap.put(lastId,(int)id);
-               }else {
-                   if (addList.contains(id)){
-                       for (;position+2<end;){
-                           byte tag = logs[position+3];
-                           byte[] tmp = findSingleStr(logs,position,SPLITE_FLAG,3);
-                           updateTag(addMap.get(id),tag,tmp,startId);
-                       }
-                       addList.add(lastId);
-                       addMap.put(lastId,addMap.get(id));
-                       addList.remove(id);
-                       addMap.remove(id);
-                   }
-               }
-           }
-       }
+        long lastId = Long.parseLong(new String(findSingleStr(logs,start,SPLITE_FLAG,2)));
+        long id = Long.parseLong(new String(findSingleStr(logs,position,SPLITE_FLAG,1)));
+        if (lastId==id){
+            if (id>startId&&id<endId&&!finishArr[(int)id-startId]){ //范围之内且未进行最终操作
+                for (;position+2<end;){
+                    byte tag = logs[position+3];
+                    byte[] tmp = findSingleStr(logs,position,SPLITE_FLAG,3);
+                    updateTag((int)id,tag,tmp,startId);
+                }
+            }else if ((id<=startId||id>=endId)&&addList.contains(id)){ //范围之外，映射进入范围之内
+                for (;position+2<end;){
+                    byte tag = logs[position+3];
+                    byte[] tmp = findSingleStr(logs,position,SPLITE_FLAG,3);
+                    updateTag(addMap.get(id),tag,tmp,startId);
+                }
+            }
+        }else {
+            if (lastId<endId&&lastId>startId){
+                if ((id<=startId||id>=endId)&&!addList.contains(id)){ //范围之内改到范围之外　删除范围之内的值
+                    finishArr[(int)lastId-startId] = true;
+                }else {                      //范围之内改到范围之内　删除范围之内的值，添加范围之内的值
+                    for (;position+2<end;){
+                        byte tag = logs[position+3];
+                        byte[] tmp = findSingleStr(logs,position,SPLITE_FLAG,3);
+                        updateTag((int)id,tag,tmp,startId);
+                    }
+                    finishArr[(int)lastId-startId] = true;
+                    finishArr[(int)lastId-startId] = false;
+                }
+            }else {
+                if (id>startId&&id<endId){   //范围之外改到范围之内　添加范围之外的值
+                    for (;position+2<end;){
+                        byte tag = logs[position+3];
+                        byte[] tmp = findSingleStr(logs,position,SPLITE_FLAG,3);
+                        updateTag((int)id,tag,tmp,startId);
+                    }
+                    addList.add(lastId);
+                    addMap.put(lastId,(int)id);
+                }else {
+                    if (addList.contains(id)){
+                        for (;position+2<end;){
+                            byte tag = logs[position+3];
+                            byte[] tmp = findSingleStr(logs,position,SPLITE_FLAG,3);
+                            updateTag(addMap.get(id),tag,tmp,startId);
+                        }
+                        addList.add(lastId);
+                        addMap.put(lastId,addMap.get(id));
+                        addList.remove(id);
+                        addMap.remove(id);
+                    }
+                }
+            }
+        }
     }
     private void deleteOperate(byte[] logs,int start,int end,int startId,int endId){
         long lastId = Long.parseLong(new String(findSingleStr(logs,start,SPLITE_FLAG,2)));
@@ -448,9 +407,9 @@ public class LogStore {
     public static void main(String[] args) throws Exception{
         LogStore logStore = getInstance();
         logStore.init(100,200);
-        String path = "/home/tuzhenyu/tmp/canal_data/1";
+        String path = "/canal_data/1";
         long startConsumer = System.currentTimeMillis();
-        for (int i=0;i<1;i++){
+        for (int i=0;i<3;i++){
             new ProduceThread(logStore,path).start();
         }
         logStore.parseBytes("middleware5|student",100,200);
