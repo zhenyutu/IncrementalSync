@@ -37,7 +37,7 @@ public class LogStore {
     private ArrayBlockingQueue<byte[]> bufferQueue = new ArrayBlockingQueue<>(4);
     private Map<Integer,Long> filePositionMap = new HashMap<>();
     private Map<Integer,FileChannel> fileChannelMap = new HashMap<>();
-    private volatile int fileNum = 10;
+    private volatile int fileNum = 8;
 
     private boolean running = false;
     private int position = 0;
