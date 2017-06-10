@@ -58,7 +58,7 @@ public class ServerDemoInHandler extends ChannelInboundHandlerAdapter {
         LogStore logStore = LogStore.getInstance();
         int statId = Integer.parseInt(start);
         int endId = Integer.parseInt(end);
-        logStore.init(statId,endId);
+        logStore.init(statId,endId,Constants.DATA_HOME);
 //        String path = "/canal_data/1";
         String schemaTable = schema+"|"+table;
         logger.info(schemaTable);

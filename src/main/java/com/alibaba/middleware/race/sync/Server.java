@@ -38,9 +38,9 @@ public class Server {
         Logger logger = LoggerFactory.getLogger(Server.class);
         Server server = new Server();
         logger.info("com.alibaba.middleware.race.sync.Server is running....");
-        for (int i = 0; i < 10; i++) {
-            logger.info("com.alibaba.middleware.race.sync.Server is running....");
-        }
+//        for (int i = 0; i < 10; i++) {
+//            logger.info("com.alibaba.middleware.race.sync.Server is running....");
+//        }
 
         server.startServer(5527,args[0],args[1],args[2],args[3]);
 //        server.startServer(5527,"middleware5","student","100","200");
