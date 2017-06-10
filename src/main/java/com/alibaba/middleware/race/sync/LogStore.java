@@ -16,7 +16,7 @@ import java.util.concurrent.ArrayBlockingQueue;
  * @author tuzhenyu
  */
 public class LogStore {
-    private static Logger logger = LoggerFactory.getLogger(LogStore.class);
+    private static Logger logger = LoggerFactory.getLogger(Server.class);
 
     private static final LogStore INSTANCE = new LogStore();
     public static LogStore getInstance() {
@@ -48,6 +48,7 @@ public class LogStore {
     private boolean[] finishArr = null;
 
     public void init(int start,int end){
+        logger.info("get into the init");
         resultBuffer = ByteBuffer.allocate((end-start+1)*20);
         finishArr = new boolean[end-start+1];
     }

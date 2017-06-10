@@ -53,6 +53,7 @@ public class ServerDemoInHandler extends ChannelInboundHandlerAdapter {
         String resultStr = new String(result1);
         // 接收并打印客户端的信息
         logger.info("com.alibaba.middleware.race.sync.Client said:" + resultStr);
+        logger.info("begin to run...");
 
         LogStore logStore = LogStore.getInstance();
         int statId = Integer.parseInt(start);
@@ -60,17 +61,17 @@ public class ServerDemoInHandler extends ChannelInboundHandlerAdapter {
         logStore.init(statId,endId);
 //        String path = "/canal_data/1";
         String schemaTable = schema+"|"+table;
-        System.out.println(schemaTable);
+        logger.info(schemaTable);
         long startConsumer = System.currentTimeMillis();
         for (int i=0;i<3;i++){
             new ProduceThread(logStore,Constants.DATA_HOME).start();
         }
         logStore.parseBytes(schemaTable,Integer.parseInt(start),Integer.parseInt(end));
-        System.out.println("finish the parse");
+        logger.info("finish the parse");
         ByteBuffer buffer = logStore.parse();
 //        logStore.flush(buffer);
         long endConsumer = System.currentTimeMillis();
-        System.out.println("the cost time: "+(endConsumer-startConsumer));
+        logger.info("the cost time: "+(endConsumer-startConsumer));
         logger.info("the cost time: "+(endConsumer-startConsumer));
         logger.info("finish the parse");
 
