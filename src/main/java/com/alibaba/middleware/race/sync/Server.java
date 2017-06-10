@@ -43,7 +43,7 @@ public class Server {
         }
 
         server.startServer(5527,args[0],args[1],args[2],args[3]);
-//        server.startServer(5527,"middleware5","student","100","500");
+//        server.startServer(5527,"middleware5","student","100","200");
     }
 
     /**

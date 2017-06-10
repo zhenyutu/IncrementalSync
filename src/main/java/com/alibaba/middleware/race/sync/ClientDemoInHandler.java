@@ -7,6 +7,11 @@ import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
 
+import java.io.IOException;
+import java.io.RandomAccessFile;
+import java.nio.ByteBuffer;
+import java.nio.channels.FileChannel;
+
 /**
  * Created by wanshao on 2017/5/25.
  */
@@ -22,9 +27,12 @@ public class ClientDemoInHandler extends ChannelInboundHandlerAdapter {
         ByteBuf result = (ByteBuf) msg;
         byte[] result1 = new byte[result.readableBytes()];
         result.readBytes(result1);
-        System.out.println("com.alibaba.middleware.race.sync.Server said:" + new String(result1));
+        writeBytes(result1);
+        System.out.println("get the result");
+//        System.out.println("com.alibaba.middleware.race.sync.Server said:" + new String(result1));
         result.release();
         ctx.writeAndFlush("I have received your messages and wait for next messages");
+        ctx.close();
     }
 
     // 连接成功后，向server发送消息
@@ -36,5 +44,11 @@ public class ClientDemoInHandler extends ChannelInboundHandlerAdapter {
         encoded.writeBytes(msg.getBytes());
         ctx.write(encoded);
         ctx.flush();
+    }
+
+    private void writeBytes(byte[] bytes) throws IOException{
+        String fileName = Constants.MIDDLE_HOME+"/RESULT.rs";
+        FileChannel channel = new RandomAccessFile(fileName, "rw").getChannel();
+        channel.write(ByteBuffer.wrap(bytes));
     }
 }

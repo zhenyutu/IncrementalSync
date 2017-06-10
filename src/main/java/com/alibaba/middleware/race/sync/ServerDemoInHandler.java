@@ -11,6 +11,8 @@ import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
 
+import java.nio.ByteBuffer;
+
 /**
  * 处理client端的请求 Created by wanshao on 2017/5/25.
  */
@@ -53,17 +55,29 @@ public class ServerDemoInHandler extends ChannelInboundHandlerAdapter {
         logger.info("com.alibaba.middleware.race.sync.Client said:" + resultStr);
 
         LogStore logStore = LogStore.getInstance();
-        String file = Constants.DATA_HOME+"/10.txt";
-        logger.info("the file path is:"+file);
+        int statId = Integer.parseInt(start);
+        int endId = Integer.parseInt(end);
+        logStore.init(statId,endId);
+//        String path = "/canal_data/1";
+        String schemaTable = schema+"|"+table;
+        System.out.println(schemaTable);
         long startConsumer = System.currentTimeMillis();
-//        logStore.pullBytesFormFile(schema,table,Integer.parseInt(start),Integer.parseInt(end));
+        for (int i=0;i<3;i++){
+            new ProduceThread(logStore,Constants.DATA_HOME).start();
+        }
+        logStore.parseBytes(schemaTable,Integer.parseInt(start),Integer.parseInt(end));
+        System.out.println("finish the parse");
+        ByteBuffer buffer = logStore.parse();
+//        logStore.flush(buffer);
         long endConsumer = System.currentTimeMillis();
+        System.out.println("the cost time: "+(endConsumer-startConsumer));
         logger.info("the cost time: "+(endConsumer-startConsumer));
         logger.info("finish the parse");
 
-        String message = "finish the parse";
+//        String message = "finish the parse";
         Channel channel = Server.getMap().get("127.0.0.1");
-        ByteBuf byteBuf = Unpooled.wrappedBuffer(message.getBytes());
+//        ByteBuf byteBuf = Unpooled.wrappedBuffer(message.getBytes());
+        ByteBuf byteBuf = Unpooled.wrappedBuffer(buffer);
         channel.writeAndFlush(byteBuf).addListener(new ChannelFutureListener() {
 
             @Override

@@ -53,7 +53,12 @@ public class LogStore {
     }
 
     public void pullBytesFormFile(String path) throws Exception {
-//        logger.info("get into the pullBytesFormFile");
+        logger.info("get into the pullBytesFormFile");
+
+        String f = path + "/1.txt";
+        ByteBuffer b = ByteBuffer.allocate(200);
+        new RandomAccessFile(f, "r").getChannel().read(b);
+        logger.info(Arrays.toString(b.array()));
 
         while (true){
             MappedByteBuffer buffer;
@@ -335,7 +340,7 @@ public class LogStore {
             finishArr[(int) lastId-startId] = true;
     }
 
-    private ByteBuffer parse(){
+    public ByteBuffer parse(){
         ByteBuffer buffer = (ByteBuffer)resultBuffer.position(0);
         ByteBuffer result = ByteBuffer.allocate(buffer.capacity());
         int id;
@@ -368,7 +373,7 @@ public class LogStore {
         return result;
     }
 
-    private void flush(ByteBuffer buffer) throws IOException{
+    public void flush(ByteBuffer buffer) throws IOException{
         String fileName = Constants.MIDDLE_HOME+"/RESULT.rs";
         FileChannel channel = new RandomAccessFile(fileName, "rw").getChannel();
         channel.write(buffer);
@@ -404,15 +409,16 @@ public class LogStore {
 //        System.out.println(endConsumer-startConsumer);
 //    }
 
+
     public static void main(String[] args) throws Exception{
         LogStore logStore = getInstance();
-        logStore.init(100,200);
+        logStore.init(100,500);
         String path = "/canal_data/1";
         long startConsumer = System.currentTimeMillis();
         for (int i=0;i<3;i++){
-            new ProduceThread(logStore,path).start();
+            new ProduceThread(logStore,path)    .start();
         }
-        logStore.parseBytes("middleware5|student",100,200);
+        logStore.parseBytes("middleware5|student",100,500);
         System.out.println("finish the parse");
         ByteBuffer buffer = logStore.parse();
         logStore.flush(buffer);
