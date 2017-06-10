@@ -56,7 +56,7 @@ public class ServerDemoInHandler extends ChannelInboundHandlerAdapter {
         String file = Constants.DATA_HOME+"/10.txt";
         logger.info("the file path is:"+file);
         long startConsumer = System.currentTimeMillis();
-        logStore.pullBytesFormFile(schema,table,Integer.parseInt(start),Integer.parseInt(end));
+//        logStore.pullBytesFormFile(schema,table,Integer.parseInt(start),Integer.parseInt(end));
         long endConsumer = System.currentTimeMillis();
         logger.info("the cost time: "+(endConsumer-startConsumer));
         logger.info("finish the parse");

@@ -8,9 +8,8 @@ import java.io.RandomAccessFile;
 import java.nio.ByteBuffer;
 import java.nio.MappedByteBuffer;
 import java.nio.channels.FileChannel;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
+import java.util.concurrent.ArrayBlockingQueue;
 
 /**
  * Created by tuzhenyu on 17-6-7.
@@ -24,7 +23,7 @@ public class LogStore {
         return INSTANCE;
     }
 
-    private static final int PAGE_SIZE = 40*1024;
+    private static final int PAGE_SIZE = 20*1024*1024;
     private static final byte SPLITE_FLAG = (byte)124;
     private static final byte END_FLAG = (byte)10;
     private static final byte SPACE_FLAG = (byte)9;
@@ -35,6 +34,12 @@ public class LogStore {
     private static final byte SCORE_FLAG = (byte)111;
     private static final byte EMPTY_FLAG = (byte)0;
 
+    private ArrayBlockingQueue<byte[]> bufferQueue = new ArrayBlockingQueue<>(4);
+    private Map<Integer,Long> filePositionMap = new HashMap<>();
+    private Map<Integer,FileChannel> fileChannelMap = new HashMap<>();
+    private volatile int fileNum = 9;
+
+    private boolean running = false;
     private int position = 0;
     private ByteBuffer resultBuffer = null;
 
@@ -47,29 +52,76 @@ public class LogStore {
         finishArr = new boolean[end-start+1];
     }
 
-    public void pullBytesFormFile(String file,String schemaTable,int start,int end) throws IOException {
-        logger.info("get into the pullBytesFormFile");
-        byte[] lastLogs = null;
-        byte[] logs = null;
-        FileChannel channel = new RandomAccessFile(file, "r").getChannel();
-        MappedByteBuffer buffer;
+    public void pullBytesFormFile(String path) throws Exception {
+//        logger.info("get into the pullBytesFormFile");
 
-        for (long i = channel.size(); i > 0 ; i=i-PAGE_SIZE)
-        {
-            buffer = channel.map(FileChannel.MapMode.READ_ONLY, Math.max(i-PAGE_SIZE , 0), Math.min(i , PAGE_SIZE));
-            byte[] bytes = new byte[buffer.remaining()];
-            buffer.get(bytes);
-            if (lastLogs != null){
-                logs = new byte[lastLogs.length+bytes.length];
-                System.arraycopy(bytes, 0, logs, 0, bytes.length);
-                System.arraycopy(lastLogs, 0, logs, bytes.length, lastLogs.length);
-            }else {
-                logs = bytes;
+        while (true){
+            MappedByteBuffer buffer;
+            synchronized(this){
+                if (running)
+                    break;
+                FileChannel channel = fileChannelMap.get(fileNum);
+                if (channel==null){
+                    String file = path + "/canal_0" + fileNum + ".txt";
+                    channel = new RandomAccessFile(file, "r").getChannel();
+                    fileChannelMap.put(fileNum,channel);
+                }
+                Long filePosition = filePositionMap.get(fileNum);
+                if (filePosition==null){
+                    filePosition = channel.size();
+                    filePositionMap.put(fileNum,filePosition);
+                }
+                buffer = channel.map(FileChannel.MapMode.READ_ONLY, Math.max(filePosition-PAGE_SIZE , 0), Math.min(filePosition , PAGE_SIZE));
+                filePosition = filePosition - PAGE_SIZE;
+                filePositionMap.put(fileNum,filePosition);
+
+                byte[] bytes = new byte[buffer.remaining()];
+                buffer.get(bytes);
+                bufferQueue.put(bytes);
+
+                if (filePosition<0){
+                    if (fileNum>0){
+                        fileChannelMap.get(fileNum).close();
+                        fileNum--;
+                    }
+                    else{
+                        running = true;
+                        break;
+                    }
+                }
             }
-            lastLogs = getLogFromBytes(logs, schemaTable, start, end);
+
         }
-        operate(logs,schemaTable,-2,lastLogs.length,start,end);
-        channel.close();
+    }
+
+    public void parseBytes(String schemaTable,int start,int end)throws Exception{
+        byte[] logs;
+        byte[] lastLogs = null;
+        int num = 0;
+        while (true){
+            logs = bufferQueue.take();
+            lastLogs = parseBytesFromQueue(logs,lastLogs,schemaTable,start,end);
+            if(logs.length != PAGE_SIZE){
+                operate(logs,schemaTable,-2,lastLogs.length,start,end);
+                num++;
+            }
+            if(num>9)
+                break;
+        }
+    }
+
+    private byte[] parseBytesFromQueue(byte[] bytes,byte[] lastLogs,String schemaTable,int start,int end)throws IOException{
+        byte[] logs = null;
+
+        if (lastLogs != null){
+            logs = new byte[lastLogs.length+bytes.length];
+            System.arraycopy(bytes, 0, logs, 0, bytes.length);
+            System.arraycopy(lastLogs, 0, logs, bytes.length, lastLogs.length);
+        }else
+            logs = bytes;
+        byte[] newLastLogs = getLogFromBytes(logs, schemaTable, start, end);
+
+        return newLastLogs;
     }
 
     private byte[] getLogFromBytes(byte[] logs,String schemaTableName,int startId,int endId) throws IOException{
@@ -322,23 +374,50 @@ public class LogStore {
         channel.write(buffer);
     }
 
-    public void startPullFile(String schema,String table,int start,int end) throws IOException{
+//    public void startPullFile(String schema,String table,int start,int end) throws IOException{
+//        long startConsumer = System.currentTimeMillis();
+//        String schemaTable = schema + "|" + table;
+//        init(start,end);
+//        for (int i=9;i>=0;i--){
+//            String file = "/home/tuzhenyu/tmp/canal_data/1/canal_0"+i+".txt";
+//            pullBytesFormFile(file,schemaTable,100,200);
+//        }
+//        ByteBuffer buffer = parse();
+//        flush(buffer);
+//        long endConsumer = System.currentTimeMillis();
+//        System.out.println(endConsumer-startConsumer);
+//    }
+
+//    public static void main(String[] args) throws IOException{
+//        LogStore handler = getInstance();
+////        handler.startPullFile("middleware5","student",100,200);
+//
+//        long startConsumer = System.currentTimeMillis();
+//        String schemaTable = "middleware5|student" ;
+//        handler.init(100,200);
+//
+//        String file = "/home/tuzhenyu/tmp/canal_data/1/canal.txt";
+//        handler.pullBytesFormFile(file,schemaTable,100,200);
+//        ByteBuffer buffer = handler.parse();
+//        handler.flush(buffer);
+//        long endConsumer = System.currentTimeMillis();
+//        System.out.println(endConsumer-startConsumer);
+//    }
+
+    public static void main(String[] args) throws Exception{
+        LogStore logStore = getInstance();
+        logStore.init(100,200);
+        String path = "/home/tuzhenyu/tmp/canal_data/1";
         long startConsumer = System.currentTimeMillis();
-        String schemaTable = schema + "|" + table;
-        init(start,end);
-        for (int i=9;i>=0;i--){
-            String file = "/home/tuzhenyu/tmp/canal_data/1/canal_0"+i+".txt";
-            pullBytesFormFile(file,schemaTable,100,200);
+        for (int i=0;i<3;i++){
+            new ProduceThread(logStore,path).start();
         }
-        ByteBuffer buffer = parse();
-        flush(buffer);
+        logStore.parseBytes("middleware5|student",100,200);
+        System.out.println("finish the parse");
+        ByteBuffer buffer = logStore.parse();
+        logStore.flush(buffer);
         long endConsumer = System.currentTimeMillis();
         System.out.println(endConsumer-startConsumer);
-    }
-
-    public static void main(String[] args) throws IOException{
-        LogStore handler = getInstance();
-        handler.startPullFile("middleware5","student",100,200);
     }
 
 
