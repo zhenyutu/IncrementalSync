@@ -350,6 +350,11 @@ public class LogStore {
     }
 
     public ByteBuffer parse(){
+        byte[] tmp = new byte[200];
+        ByteBuffer buffer1 = (ByteBuffer)resultBuffer.position(0);
+        buffer1.get(tmp);
+        logger.info("resultBuffer:"+Arrays.toString(tmp));
+
         ByteBuffer buffer = (ByteBuffer)resultBuffer.position(0);
         ByteBuffer result = ByteBuffer.allocate(buffer.capacity());
         int id;
