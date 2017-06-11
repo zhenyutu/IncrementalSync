@@ -62,25 +62,46 @@ public class ServerDemoInHandler extends ChannelInboundHandlerAdapter {
         logger.info("com.alibaba.middleware.race.sync.Client said:" + resultStr);
         logger.info("begin to run...");
 
-        LogStore logStore = LogStore.getInstance();
-        int statId = Integer.parseInt(start);
-        int endId = Integer.parseInt(end);
-        logStore.init(statId,endId,Constants.DATA_HOME);
-//        String path = "/canal_data/1";
         String schemaTable = schema+"|"+table;
-        logger.info(schemaTable + "-"+statId +"-"+endId);
-        long startConsumer = System.currentTimeMillis();
-        for (int i=0;i<3;i++){
-            new ProduceThread(logStore,Constants.DATA_HOME).start();
+        ByteBuffer buffer;
+
+        if ("middleware2|teacher".equals(schemaTable)){
+            logger.info("get into the teacher");
+            LogStore2 logStore2 = LogStore2.getInstance();
+            int statId = Integer.parseInt(start);
+            int endId = Integer.parseInt(end);
+            logStore2.init(statId,endId);
+            logger.info(schemaTable + "-"+statId +"-"+endId);
+            long startConsumer = System.currentTimeMillis();
+            for (int i=0;i<3;i++){
+                new ProduceThread2(logStore2,Constants.DATA_HOME).start();
+            }
+            logStore2.parseBytes(schemaTable,Integer.parseInt(start),Integer.parseInt(end));
+            logger.info("finish the parse");
+            buffer = logStore2.parse();
+            long endConsumer = System.currentTimeMillis();
+            logger.info("the cost time: "+(endConsumer-startConsumer));
+        }else {
+            logger.info("get into the student");
+            LogStore logStore = LogStore.getInstance();
+            int statId = Integer.parseInt(start);
+            int endId = Integer.parseInt(end);
+            logStore.init(statId,endId);
+            logger.info(schemaTable + "-"+statId +"-"+endId);
+            long startConsumer = System.currentTimeMillis();
+            for (int i=0;i<3;i++){
+                new ProduceThread(logStore,Constants.DATA_HOME).start();
+            }
+            logStore.parseBytes(schemaTable,Integer.parseInt(start),Integer.parseInt(end));
+            logger.info("finish the parse");
+            buffer = logStore.parse();
+            long endConsumer = System.currentTimeMillis();
+            logger.info("the cost time: "+(endConsumer-startConsumer));
         }
-        logStore.parseBytes(schemaTable,Integer.parseInt(start),Integer.parseInt(end));
+
+        byte[] data = new byte[buffer.limit()];
+        buffer.get(data);
         logger.info("finish the parse");
-        ByteBuffer buffer = logStore.parse();
-//        logStore.flush(buffer);
-        long endConsumer = System.currentTimeMillis();
-        logger.info("the cost time: "+(endConsumer-startConsumer));
-        logger.info("finish the parse");
-        byte[] data = buffer.array();
         logger.warn(Arrays.toString(data));
         byte[] zipData = compress(data);
         logger.info("length:"+data.length+"-"+zipData.length);
