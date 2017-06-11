@@ -47,8 +47,6 @@ public class LogStore {
     private Map<Long,Integer> addMap = new HashMap<>();
     private boolean[] finishArr = null;
 
-    private boolean test = true;
-
     public void init(int start,int end,String path)throws Exception{
         logger.info("get into the init");
         resultBuffer = ByteBuffer.allocate((end-start+1)*20);
@@ -168,13 +166,6 @@ public class LogStore {
         end = findFirstByte(logs,start,SPLITE_FLAG,1);
         String operate = getStrFromBytes(logs,start,end);
         start = end;
-        if(test&&"middleware2|teacher".equals(schemaTable)&&"I".equals(operate)){
-            logger.info("enter into the middleware2|teacher");
-            byte[] tmpBytes = new byte[logEnd-start+1];
-            System.arraycopy(logs, start, tmpBytes, 0, logEnd-start+1);
-            logger.info(Arrays.toString(tmpBytes));
-            test = false;
-        }
         switch (operate){
             case "I":
                 insertOperate(logs, start, logEnd,startId,endId);

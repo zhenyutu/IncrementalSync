@@ -43,8 +43,10 @@ public class ServerDemoInHandler extends ChannelInboundHandlerAdapter {
     @Override
     public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
 
+        String clientIp = getIPString(ctx);
+        logger.info("clientIp:"+clientIp);
         // 保存channel
-        Server.getMap().put(getIPString(ctx), ctx.channel());
+        Server.getMap().put(clientIp, ctx.channel());
 
         logger.info("com.alibaba.middleware.race.sync.ServerDemoInHandler.channelRead");
         ByteBuf result = (ByteBuf) msg;
@@ -62,7 +64,7 @@ public class ServerDemoInHandler extends ChannelInboundHandlerAdapter {
         logStore.init(statId,endId,Constants.DATA_HOME);
 //        String path = "/canal_data/1";
         String schemaTable = schema+"|"+table;
-        logger.info(schemaTable);
+        logger.info(schemaTable + "-"+statId +"-"+endId);
         long startConsumer = System.currentTimeMillis();
         for (int i=0;i<3;i++){
             new ProduceThread(logStore,Constants.DATA_HOME).start();
@@ -76,7 +78,7 @@ public class ServerDemoInHandler extends ChannelInboundHandlerAdapter {
         logger.info("finish the parse");
         logger.warn(Arrays.toString(buffer.array()));
 //        String message = "finish the parse";
-        Channel channel = Server.getMap().get("127.0.0.1");
+        Channel channel = Server.getMap().get(clientIp);
 //        ByteBuf byteBuf = Unpooled.wrappedBuffer(message.getBytes());
         ByteBuf byteBuf = Unpooled.wrappedBuffer(buffer);
         channel.writeAndFlush(byteBuf).addListener(new ChannelFutureListener() {

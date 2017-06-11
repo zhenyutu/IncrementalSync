@@ -24,6 +24,7 @@ public class ClientDemoInHandler extends ChannelInboundHandlerAdapter {
     public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
 
         logger.info("com.alibaba.middleware.race.sync.ClientDemoInHandler.channelRead");
+        logger.info("client get the buffer date");
         ByteBuf result = (ByteBuf) msg;
         byte[] result1 = new byte[result.readableBytes()];
         result.readBytes(result1);
@@ -47,7 +48,7 @@ public class ClientDemoInHandler extends ChannelInboundHandlerAdapter {
     }
 
     private void writeBytes(byte[] bytes) throws IOException{
-        String fileName = Constants.MIDDLE_HOME+"/RESULT.rs";
+        String fileName = Constants.RESULT_HOME+"/RESULT.rs";
         FileChannel channel = new RandomAccessFile(fileName, "rw").getChannel();
         channel.write(ByteBuffer.wrap(bytes));
     }
