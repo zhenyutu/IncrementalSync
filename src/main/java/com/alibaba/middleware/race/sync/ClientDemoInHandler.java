@@ -52,7 +52,7 @@ public class ClientDemoInHandler extends ChannelInboundHandlerAdapter {
 
     private void writeBytes(byte[] bytes) throws IOException{
         logger.info("get into the writeBytes");
-        String fileName = Constants.RESULT_HOME+"/RESULT.rs";
+        String fileName = Constants.RESULT_HOME+"/Result.rs";
         FileChannel channel = new RandomAccessFile(fileName, "rw").getChannel();
         channel.write(ByteBuffer.wrap(bytes));
         File file = new File(fileName);
