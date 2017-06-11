@@ -327,16 +327,28 @@ public class LogStore {
                         addMap.remove(id);
                     }
                 }else {                      //范围之内改到范围之内　删除范围之内的值，添加范围之内的值
-                    for (;position+2<end;){
-                        byte tag = logs[position+3];
-                        byte[] tmp = findSingleStr(logs,position,SPLITE_FLAG,3);
-                        updateTag((int)id,tag,tmp,startId);
-                    }
-                    finishArr[(int)id-startId] = true;
-                    finishArr[(int)lastId-startId] = true;
+                    if (!addList.contains(id)){
+                        for (;position+2<end;){
+                            byte tag = logs[position+3];
+                            byte[] tmp = findSingleStr(logs,position,SPLITE_FLAG,3);
+                            updateTag((int)id,tag,tmp,startId);
+                        }
+                        finishArr[(int)id-startId] = true;
+                        finishArr[(int)lastId-startId] = true;
 
-                    addList.add(lastId);
-                    addMap.put(lastId,(int)id);
+                        addList.add(lastId);
+                        addMap.put(lastId,(int)id);
+                    }else {
+                        for (;position+2<end;){
+                            byte tag = logs[position+3];
+                            byte[] tmp = findSingleStr(logs,position,SPLITE_FLAG,3);
+                            updateTag(addMap.get(id),tag,tmp,startId);
+                        }
+                        addList.add(lastId);
+                        addMap.put(lastId,addMap.get(id));
+                        addList.remove(id);
+                        addMap.remove(id);
+                    }
                 }
             }else {
                 if (id>startId&&id<endId){   //范围之外改到范围之内　添加范围之外的值
