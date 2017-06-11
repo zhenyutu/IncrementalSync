@@ -37,7 +37,7 @@ public class LogStore {
     private ArrayBlockingQueue<byte[]> bufferQueue = new ArrayBlockingQueue<>(4);
     private Map<Integer,Long> filePositionMap = new HashMap<>();
     private Map<Integer,FileChannel> fileChannelMap = new HashMap<>();
-    private volatile int fileNum = 9;
+    private volatile int fileNum = 10;
 
     private boolean running = false;
     private int position = 0;
@@ -47,13 +47,15 @@ public class LogStore {
     private Map<Long,Integer> addMap = new HashMap<>();
     private boolean[] finishArr = null;
 
+    private boolean test = true;
+
     public void init(int start,int end,String path)throws Exception{
         logger.info("get into the init");
         resultBuffer = ByteBuffer.allocate((end-start+1)*20);
         finishArr = new boolean[end-start+1];
 
-        String f = path + "/9.txt";
-        ByteBuffer b = ByteBuffer.allocate(800);
+        String f = path + "/4.txt";
+        ByteBuffer b = ByteBuffer.allocate(1200);
         new RandomAccessFile(f, "r").getChannel().read(b);
         logger.info(Arrays.toString(b.array()));
     }
@@ -77,9 +79,6 @@ public class LogStore {
                 if (filePosition==null){
                     filePosition = channel.size();
                     filePositionMap.put(fileNum,filePosition);
-                }
-                if (fileNum==9||fileNum==8){
-                    logger.info("filePosition:"+filePosition);
                 }
                 buffer = channel.map(FileChannel.MapMode.READ_ONLY, Math.max(filePosition-PAGE_SIZE , 0), Math.min(filePosition , PAGE_SIZE));
                 filePosition = filePosition - PAGE_SIZE;
@@ -169,6 +168,13 @@ public class LogStore {
         end = findFirstByte(logs,start,SPLITE_FLAG,1);
         String operate = getStrFromBytes(logs,start,end);
         start = end;
+        if(test&&"middleware2|teacher".equals(schemaTable)&&"I".equals(operate)){
+            logger.info("enter into the middleware2|teacher");
+            byte[] tmpBytes = new byte[logEnd-start+1];
+            System.arraycopy(logs, start, tmpBytes, 0, logEnd-start+1);
+            logger.info(Arrays.toString(tmpBytes));
+            test = false;
+        }
         switch (operate){
             case "I":
                 insertOperate(logs, start, logEnd,startId,endId);
