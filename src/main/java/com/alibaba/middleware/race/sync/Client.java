@@ -31,6 +31,7 @@ public class Client {
         ip = args[0];
         logger.info("ip:"+ip);
 //        ip = "127.0.0.1";
+        Thread.sleep(15000);
         Client client = new Client();
         client.connect(ip, port);
 
