@@ -57,6 +57,7 @@ public class ClientDemoInHandler extends ChannelInboundHandlerAdapter {
         String fileName = Constants.RESULT_HOME+"/Result.rs";
         FileChannel channel = new RandomAccessFile(fileName, "rw").getChannel();
         channel.write(ByteBuffer.wrap(bytes));
+        channel.force(true);
         channel.close();
         logger.info("finish write data to Result.rs");
         File file = new File(fileName);
