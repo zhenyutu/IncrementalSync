@@ -34,7 +34,8 @@ public class LogStore2 {
     private static final byte FIRST_FLAG = (byte)114;
     private static final byte LAST_FLAG = (byte)115;
     private static final byte SEX_FLAG = (byte)120;
-    private static final byte SCORE_FLAG = (byte)111;
+    private static final byte _1_FLAG = (byte)49;
+    private static final byte _2_FLAG = (byte)50;
     private static final byte EMPTY_FLAG = (byte)0;
 
     private ArrayBlockingQueue<byte[]> bufferQueue = new ArrayBlockingQueue<>(4);
@@ -50,15 +51,10 @@ public class LogStore2 {
     private Map<Long,Integer> addMap = new HashMap<>();
     private boolean[] finishArr = null;
 
-    public void init(int start,int end,String path)throws Exception{
+    public void init(int start,int end)throws Exception{
         logger.info("get into the init");
-        resultBuffer = ByteBuffer.allocate((end-start+1)*20);
+        resultBuffer = ByteBuffer.allocate((end-start+1)*28);
         finishArr = new boolean[end-start+1];
-
-        String f = path + "/4.txt";
-        ByteBuffer b = ByteBuffer.allocate(1200);
-        new RandomAccessFile(f, "r").getChannel().read(b);
-        logger.info(Arrays.toString(b.array()));
     }
 
     public void pullBytesFormFile(String path) throws Exception {
@@ -283,7 +279,7 @@ public class LogStore2 {
                     buffer3.put(bytes);
                 }
                 break;
-            case SCORE_FLAG:
+            case _1_FLAG:
                 if (resultBuffer.get((id-startId)*20+19)==EMPTY_FLAG){
                     ByteBuffer buffer4 = (ByteBuffer) resultBuffer.position((id-startId)*20+16);
                     buffer4.putInt(Integer.parseInt(new String(bytes)));
@@ -357,6 +353,7 @@ public class LogStore2 {
         ByteBuffer result = ByteBuffer.allocate(buffer.capacity());
         int id;
         byte[] name = new byte[3];
+        byte[] empty = new byte[16];
         while(buffer.hasRemaining()){
             id = buffer.getInt();
             if (id!=0){
@@ -378,7 +375,8 @@ public class LogStore2 {
                 id = buffer.getInt();
                 result.put(String.valueOf(id).getBytes());
                 result.put(END_FLAG);
-            }
+            }else
+                buffer.get(empty);
         }
 
         result.flip();
@@ -390,36 +388,6 @@ public class LogStore2 {
         FileChannel channel = new RandomAccessFile(fileName, "rw").getChannel();
         channel.write(buffer);
     }
-
-//    public void startPullFile(String schema,String table,int start,int end) throws IOException{
-//        long startConsumer = System.currentTimeMillis();
-//        String schemaTable = schema + "|" + table;
-//        init(start,end);
-//        for (int i=9;i>=0;i--){
-//            String file = "/home/tuzhenyu/tmp/canal_data/1/canal_0"+i+".txt";
-//            pullBytesFormFile(file,schemaTable,100,200);
-//        }
-//        ByteBuffer buffer = parse();
-//        flush(buffer);
-//        long endConsumer = System.currentTimeMillis();
-//        System.out.println(endConsumer-startConsumer);
-//    }
-
-//    public static void main(String[] args) throws IOException{
-//        LogStore handler = getInstance();
-////        handler.startPullFile("middleware5","student",100,200);
-//
-//        long startConsumer = System.currentTimeMillis();
-//        String schemaTable = "middleware5|student" ;
-//        handler.init(100,200);
-//
-//        String file = "/home/tuzhenyu/tmp/canal_data/1/canal.txt";
-//        handler.pullBytesFormFile(file,schemaTable,100,200);
-//        ByteBuffer buffer = handler.parse();
-//        handler.flush(buffer);
-//        long endConsumer = System.currentTimeMillis();
-//        System.out.println(endConsumer-startConsumer);
-//    }
 
 
     public static void main(String[] args) throws Exception{

@@ -359,6 +359,7 @@ public class LogStore {
         ByteBuffer result = ByteBuffer.allocate(buffer.capacity());
         int id;
         byte[] name = new byte[3];
+        byte[] empty = new byte[16];
         while(buffer.hasRemaining()){
             id = buffer.getInt();
             if (id!=0){
@@ -380,7 +381,8 @@ public class LogStore {
                 id = buffer.getInt();
                 result.put(String.valueOf(id).getBytes());
                 result.put(END_FLAG);
-            }
+            }else
+                buffer.get(empty);
         }
 
         result.flip();
@@ -392,36 +394,6 @@ public class LogStore {
         FileChannel channel = new RandomAccessFile(fileName, "rw").getChannel();
         channel.write(buffer);
     }
-
-//    public void startPullFile(String schema,String table,int start,int end) throws IOException{
-//        long startConsumer = System.currentTimeMillis();
-//        String schemaTable = schema + "|" + table;
-//        init(start,end);
-//        for (int i=9;i>=0;i--){
-//            String file = "/home/tuzhenyu/tmp/canal_data/1/canal_0"+i+".txt";
-//            pullBytesFormFile(file,schemaTable,100,200);
-//        }
-//        ByteBuffer buffer = parse();
-//        flush(buffer);
-//        long endConsumer = System.currentTimeMillis();
-//        System.out.println(endConsumer-startConsumer);
-//    }
-
-//    public static void main(String[] args) throws IOException{
-//        LogStore handler = getInstance();
-////        handler.startPullFile("middleware5","student",100,200);
-//
-//        long startConsumer = System.currentTimeMillis();
-//        String schemaTable = "middleware5|student" ;
-//        handler.init(100,200);
-//
-//        String file = "/home/tuzhenyu/tmp/canal_data/1/canal.txt";
-//        handler.pullBytesFormFile(file,schemaTable,100,200);
-//        ByteBuffer buffer = handler.parse();
-//        handler.flush(buffer);
-//        long endConsumer = System.currentTimeMillis();
-//        System.out.println(endConsumer-startConsumer);
-//    }
 
 
     public static void main(String[] args) throws Exception{

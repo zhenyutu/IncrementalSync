@@ -7,12 +7,14 @@ import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
 
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.util.Arrays;
+import java.util.zip.Inflater;
 
 /**
  * Created by wanshao on 2017/5/25.
@@ -25,17 +27,17 @@ public class ClientDemoInHandler extends ChannelInboundHandlerAdapter {
     @Override
     public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
 
-        logger.info("com.alibaba.middleware.race.sync.ClientDemoInHandler.channelRead");
         logger.info("client get the buffer date");
         ByteBuf result = (ByteBuf) msg;
         byte[] result1 = new byte[result.readableBytes()];
         result.readBytes(result1);
-        logger.info(Arrays.toString(result1));
-        writeBytes(result1);
-        logger.info("get the result");
-//        System.out.println("com.alibaba.middleware.race.sync.Server said:" + new String(result1));
+        byte[] data = uncompress(result1);
+        logger.info("length:"+result1.length+"-"+data.length);
+        logger.info(Arrays.toString(data));
+        writeBytes(data);
+        logger.info("finish the write result And close the ctx");
         result.release();
-        ctx.writeAndFlush("I have received your messages and wait for next messages");
+//        ctx.writeAndFlush("I have received your messages and wait for next messages");
         ctx.close();
     }
 
@@ -55,7 +57,33 @@ public class ClientDemoInHandler extends ChannelInboundHandlerAdapter {
         String fileName = Constants.RESULT_HOME+"/Result.rs";
         FileChannel channel = new RandomAccessFile(fileName, "rw").getChannel();
         channel.write(ByteBuffer.wrap(bytes));
+        channel.close();
+        logger.info("finish write data to Result.rs");
         File file = new File(fileName);
+        logger.info(file.getPath());
         logger.info("the file exist:"+file.exists());
+    }
+
+    public static byte[] uncompress(byte[] inputByte) throws IOException {
+        int len = 0;
+        Inflater infl = new Inflater();
+        infl.setInput(inputByte);
+        ByteArrayOutputStream bos = new ByteArrayOutputStream();
+        byte[] outByte = new byte[1024];
+        try {
+            while (!infl.finished()) {
+                len = infl.inflate(outByte);
+                if (len == 0) {
+                    break;
+                }
+                bos.write(outByte, 0, len);
+            }
+            infl.end();
+        } catch (Exception e) {
+            //
+        } finally {
+            bos.close();
+        }
+        return bos.toByteArray();
     }
 }

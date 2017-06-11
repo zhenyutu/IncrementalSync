@@ -11,8 +11,12 @@ import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
 
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
+import java.util.zip.Deflater;
+import java.util.zip.Inflater;
 
 /**
  * 处理client端的请求 Created by wanshao on 2017/5/25.
@@ -76,11 +80,13 @@ public class ServerDemoInHandler extends ChannelInboundHandlerAdapter {
         long endConsumer = System.currentTimeMillis();
         logger.info("the cost time: "+(endConsumer-startConsumer));
         logger.info("finish the parse");
-        logger.warn(Arrays.toString(buffer.array()));
-//        String message = "finish the parse";
+        byte[] data = buffer.array();
+        logger.warn(Arrays.toString(data));
+        byte[] zipData = compress(data);
+        logger.info("length:"+data.length+"-"+zipData.length);
+
         Channel channel = Server.getMap().get(clientIp);
-//        ByteBuf byteBuf = Unpooled.wrappedBuffer(message.getBytes());
-        ByteBuf byteBuf = Unpooled.wrappedBuffer(buffer);
+        ByteBuf byteBuf = Unpooled.wrappedBuffer(zipData);
         channel.writeAndFlush(byteBuf).addListener(new ChannelFutureListener() {
 
             @Override
@@ -96,11 +102,22 @@ public class ServerDemoInHandler extends ChannelInboundHandlerAdapter {
         ctx.flush();
     }
 
-    private Object getMessage() throws InterruptedException {
-        // 模拟下数据生成，每隔5秒产生一条消息
-        Thread.sleep(5000);
-
-        return "message generated in ServerDemoInHandler";
-
+    public static byte[] compress(byte[] inputByte) throws IOException {
+        int len = 0;
+        Deflater defl = new Deflater();
+        defl.setInput(inputByte);
+        defl.finish();
+        ByteArrayOutputStream bos = new ByteArrayOutputStream();
+        byte[] outputByte = new byte[1024];
+        try {
+            while (!defl.finished()) {
+                len = defl.deflate(outputByte);
+                bos.write(outputByte, 0, len);
+            }
+            defl.end();
+        } finally {
+            bos.close();
+        }
+        return bos.toByteArray();
     }
 }
