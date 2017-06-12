@@ -43,7 +43,6 @@ public class LogStore {
     private int position = 0;
     private ByteBuffer resultBuffer = null;
 
-    private ArrayList<Long> addList = new ArrayList<>();
     private Map<Long,Integer> addMap = new HashMap<>();
     private boolean[] finishArr = null;
 
@@ -231,11 +230,11 @@ public class LogStore {
         byte[] idBytes = findSingleStr(logs,start,SPLITE_FLAG,3);
         long id = Long.parseLong(new String(idBytes));
         if (id<=startId||id>=endId){
-            if (addList.contains(id)){
+            if (addMap.keySet().contains(id)){
                 insert(logs,addMap.get(id),end,startId);
             }
         }else {
-            if (addList.contains(id)){
+            if (addMap.keySet().contains(id)){
                 insert(logs,addMap.get(id),end,startId);
             }else if (!finishArr[(int)id-startId])
                 insert(logs,(int)id,end,startId);
@@ -295,14 +294,14 @@ public class LogStore {
                         byte[] tmp = findSingleStr(logs,position,SPLITE_FLAG,3);
                         updateTag((int)id,tag,tmp,startId);
                     }
-                }else if (addList.contains(id)){
+                }else if (addMap.keySet().contains(id)){
                     for (;position+2<end;){
                         byte tag = logs[position+3];
                         byte[] tmp = findSingleStr(logs,position,SPLITE_FLAG,3);
                         updateTag(addMap.get(id),tag,tmp,startId);
                     }
                 }
-            }else if ((id<=startId||id>=endId)&&addList.contains(id)){ //范围之外，映射进入范围之内
+            }else if ((id<=startId||id>=endId)&&addMap.keySet().contains(id)){ //范围之外，映射进入范围之内
                 for (;position+2<end;){
                     byte tag = logs[position+3];
                     byte[] tmp = findSingleStr(logs,position,SPLITE_FLAG,3);
@@ -312,17 +311,15 @@ public class LogStore {
         }else {
             if (lastId<endId&&lastId>startId){
                 if ((id<=startId||id>=endId)){ //范围之内改到范围之外　删除范围之内的值
-                    if (!addList.contains(id))
+                    if (!addMap.keySet().contains(id))
                         finishArr[(int)lastId-startId] = true;
                     else{
                         finishArr[(int)lastId-startId] = true;
-                        addList.add(lastId);
                         addMap.put(lastId,addMap.get(id));
-                        addList.remove(id);
                         addMap.remove(id);
                     }
                 }else {                      //范围之内改到范围之内　删除范围之内的值，添加范围之内的值
-                    if (!addList.contains(id)){
+                    if (!addMap.keySet().contains(id)){
                         for (;position+2<end;){
                             byte tag = logs[position+3];
                             byte[] tmp = findSingleStr(logs,position,SPLITE_FLAG,3);
@@ -331,7 +328,6 @@ public class LogStore {
                         finishArr[(int)id-startId] = true;
                         finishArr[(int)lastId-startId] = true;
 
-                        addList.add(lastId);
                         addMap.put(lastId,(int)id);
                     }else {
                         for (;position+2<end;){
@@ -339,9 +335,7 @@ public class LogStore {
                             byte[] tmp = findSingleStr(logs,position,SPLITE_FLAG,3);
                             updateTag(addMap.get(id),tag,tmp,startId);
                         }
-                        addList.add(lastId);
                         addMap.put(lastId,addMap.get(id));
-                        addList.remove(id);
                         addMap.remove(id);
                     }
                 }
@@ -352,18 +346,15 @@ public class LogStore {
                         byte[] tmp = findSingleStr(logs,position,SPLITE_FLAG,3);
                         updateTag((int)id,tag,tmp,startId);
                     }
-                    addList.add(lastId);
                     addMap.put(lastId,(int)id);
                 }else {
-                    if (addList.contains(id)){
+                    if (addMap.keySet().contains(id)){
                         for (;position+2<end;){
                             byte tag = logs[position+3];
                             byte[] tmp = findSingleStr(logs,position,SPLITE_FLAG,3);
                             updateTag(addMap.get(id),tag,tmp,startId);
                         }
-                        addList.add(lastId);
                         addMap.put(lastId,addMap.get(id));
-                        addList.remove(id);
                         addMap.remove(id);
                     }
                 }
