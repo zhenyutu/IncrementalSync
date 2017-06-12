@@ -1,5 +1,6 @@
 package com.alibaba.middleware.race.sync;
 
+import io.netty.channel.EventLoopGroup;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -9,18 +10,22 @@ import io.netty.channel.ChannelInboundHandlerAdapter;
 
 import java.io.*;
 import java.math.BigInteger;
-import java.nio.ByteBuffer;
-import java.nio.channels.FileChannel;
 import java.security.MessageDigest;
 import java.util.Arrays;
 import java.util.zip.Inflater;
 
 /**
  * Created by wanshao on 2017/5/25.
+ * @author tuzhenyu
  */
 public class ClientDemoInHandler extends ChannelInboundHandlerAdapter {
 
     private static Logger logger = LoggerFactory.getLogger(Client.class);
+    private EventLoopGroup workerGroup;
+
+    public ClientDemoInHandler(EventLoopGroup workerGroup){
+        this.workerGroup = workerGroup;
+    }
 
     // 接收server端的消息，并打印出来
     @Override
@@ -36,8 +41,8 @@ public class ClientDemoInHandler extends ChannelInboundHandlerAdapter {
         writeBytes(data);
         logger.info("finish the write result And close the ctx");
         result.release();
-//        ctx.writeAndFlush("I have received your messages and wait for next messages");
         ctx.close();
+        workerGroup.shutdownGracefully();
     }
 
     // 连接成功后，向server发送消息
@@ -60,11 +65,6 @@ public class ClientDemoInHandler extends ChannelInboundHandlerAdapter {
         fos.flush();
         fos.close();
         logger.info("finish write data to Result.rs");
-        File file = new File(fileName);
-        logger.info(file.getPath());
-        logger.info("the file exist:"+file.exists());
-        String md5 = getFileMD5(file);
-        logger.info("the file md5 :"+md5);
     }
 
     public static byte[] uncompress(byte[] inputByte) throws IOException {
@@ -88,28 +88,5 @@ public class ClientDemoInHandler extends ChannelInboundHandlerAdapter {
             bos.close();
         }
         return bos.toByteArray();
-    }
-
-    public static String getFileMD5(File file) {
-        if (!file.isFile()){
-            return null;
-        }
-        MessageDigest digest = null;
-        FileInputStream in=null;
-        byte buffer[] = new byte[1024];
-        int len;
-        try {
-            digest = MessageDigest.getInstance("MD5");
-            in = new FileInputStream(file);
-            while ((len = in.read(buffer, 0, 1024)) != -1) {
-                digest.update(buffer, 0, len);
-            }
-            in.close();
-        } catch (Exception e) {
-            e.printStackTrace();
-            return null;
-        }
-        BigInteger bigInt = new BigInteger(1, digest.digest());
-        return bigInt.toString(16);
     }
 }

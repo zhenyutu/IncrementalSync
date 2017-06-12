@@ -1,85 +1,88 @@
 package com.alibaba.middleware.race.sync;
 
+import io.netty.channel.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import io.netty.bootstrap.Bootstrap;
-import io.netty.channel.ChannelFuture;
-import io.netty.channel.ChannelInitializer;
-import io.netty.channel.ChannelOption;
-import io.netty.channel.EventLoopGroup;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioSocketChannel;
 import io.netty.handler.timeout.IdleStateHandler;
 
+import java.net.InetSocketAddress;
+import java.util.concurrent.TimeUnit;
+
 /**
  * Created by wanshao on 2017/5/25.
+ * @author tuzhenyu
  */
 public class Client {
 
     private final static int port = Constants.SERVER_PORT;
     // idle时间
     private static String ip;
-    private EventLoopGroup loop = new NioEventLoopGroup();
+    private volatile EventLoopGroup workerGroup;
+    private volatile Bootstrap bootstrap;
+
+    private static Logger logger = LoggerFactory.getLogger(Client.class);
 
     public static void main(String[] args) throws Exception {
         initProperties();
-        Logger logger = LoggerFactory.getLogger(Client.class);
         logger.info("Welcome");
         // 从args获取server端的ip
         ip = args[0];
         logger.info("ip:"+ip);
 //        ip = "127.0.0.1";
-        Thread.sleep(15000);
         Client client = new Client();
         client.connect(ip, port);
 
     }
 
-    /**
-     * 初始化系统属性
-     */
     private static void initProperties() {
         System.setProperty("middleware.test.home", Constants.TESTER_HOME);
         System.setProperty("middleware.teamcode", Constants.TEAMCODE);
         System.setProperty("app.logging.level", Constants.LOG_LEVEL);
     }
 
-    /**
-     * 连接服务端
-     *
-     * @param host
-     * @param port
-     * @throws Exception
-     */
     public void connect(String host, int port) throws Exception {
-        EventLoopGroup workerGroup = new NioEventLoopGroup();
+        workerGroup = new NioEventLoopGroup();
+        bootstrap = new Bootstrap();
 
-        try {
-            Bootstrap b = new Bootstrap();
-            b.group(workerGroup);
-            b.channel(NioSocketChannel.class);
-            b.option(ChannelOption.SO_KEEPALIVE, true);
-            b.handler(new ChannelInitializer<SocketChannel>() {
+        bootstrap.group(workerGroup);
+        bootstrap.channel(NioSocketChannel.class);
+        bootstrap.option(ChannelOption.SO_KEEPALIVE, true);
+        bootstrap.handler(new ChannelInitializer<SocketChannel>() {
 
-                @Override
-                public void initChannel(SocketChannel ch) throws Exception {
-                    ch.pipeline().addLast(new IdleStateHandler(10, 0, 0));
-//                    ch.pipeline().addLast(new ClientIdleEventHandler());
-                    ch.pipeline().addLast(new ClientDemoInHandler());
+            @Override
+            public void initChannel(SocketChannel ch) throws Exception {
+                ch.pipeline().addLast(new IdleStateHandler(10, 0, 0));
+                ch.pipeline().addLast(new ClientDemoInHandler(workerGroup));
+            }
+        });
+        doConnect(host,port);
+
+    }
+
+    private void doConnect(final String host, final int port) {
+
+        ChannelFuture future = bootstrap.connect(new InetSocketAddress(host, port));
+
+        future.addListener(new ChannelFutureListener() {
+            public void operationComplete(ChannelFuture f) throws Exception {
+                if (f.isSuccess()) {
+                    logger.info("Started Tcp Client successfully");
+                } else {
+                    logger.info("Started Tcp Client Failed");
+                    f.channel().eventLoop().schedule( new Runnable() {
+                        @Override
+                        public void run() {
+                            doConnect(host,port);
+                        }
+                    }, 1, TimeUnit.SECONDS);
                 }
-            });
-
-            // Start the client.
-            ChannelFuture f = b.connect(host, port).sync();
-
-            // Wait until the connection is closed.
-            f.channel().closeFuture().sync();
-        } finally {
-            workerGroup.shutdownGracefully();
-        }
-
+            }
+        });
     }
 
 
