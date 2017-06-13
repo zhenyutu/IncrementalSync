@@ -1,6 +1,7 @@
 package com.alibaba.middleware.race.sync;
 
 import io.netty.channel.*;
+import io.netty.handler.codec.LengthFieldBasedFrameDecoder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -56,6 +57,7 @@ public class Client {
 
             @Override
             public void initChannel(SocketChannel ch) throws Exception {
+                ch.pipeline().addFirst("decoder", new LengthFieldBasedFrameDecoder(Integer.MAX_VALUE, 0, 4, 0, 4));
                 ch.pipeline().addLast(new IdleStateHandler(10, 0, 0));
                 ch.pipeline().addLast(new ClientDemoInHandler(workerGroup));
             }

@@ -3,6 +3,7 @@ package com.alibaba.middleware.race.sync;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
+import io.netty.handler.codec.LengthFieldPrepender;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -79,7 +80,7 @@ public class Server {
                     public void initChannel(SocketChannel ch) throws Exception {
                         // 注册handler
                         ch.pipeline().addLast(new ServerDemoInHandler(schema,table,start,end));
-                        // ch.pipeline().addLast(new ServerDemoOutHandler());
+                        ch.pipeline().addLast("encoder", new LengthFieldPrepender(4, false));
                     }
                 })
                 .option(ChannelOption.SO_BACKLOG, 128)
