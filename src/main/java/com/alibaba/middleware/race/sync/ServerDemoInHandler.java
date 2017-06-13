@@ -92,7 +92,7 @@ public class ServerDemoInHandler extends ChannelInboundHandlerAdapter {
             for (int i=0;i<3;i++){
                 new ProduceThread(logStore,Constants.DATA_HOME).start();
             }
-            logStore.parseBytes(schemaTable,Integer.parseInt(start),Integer.parseInt(end));
+            logStore.parseBytes("middleware5|student",Integer.parseInt(start),Integer.parseInt(end));
             logger.info("finish the parse");
             buffer = logStore.parse();
             long endConsumer = System.currentTimeMillis();
