@@ -102,7 +102,7 @@ public class ServerDemoInHandler extends ChannelInboundHandlerAdapter {
         byte[] data = new byte[buffer.limit()];
         buffer.get(data);
         logger.info("finish the parse");
-        logger.warn(Arrays.toString(data));
+//        logger.warn(Arrays.toString(data));
         byte[] zipData = compress(data);
         logger.info("length:"+data.length+"-"+zipData.length);
 

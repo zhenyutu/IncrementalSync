@@ -37,7 +37,7 @@ public class ClientDemoInHandler extends ChannelInboundHandlerAdapter {
         result.readBytes(result1);
         byte[] data = uncompress(result1);
         logger.info("length:"+result1.length+"-"+data.length);
-        logger.info(Arrays.toString(data));
+//        logger.info(Arrays.toString(data));
         writeBytes(data);
         logger.info("finish the write result And close the ctx");
         result.release();
