@@ -86,7 +86,7 @@ public class ServerDemoInHandler extends ChannelInboundHandlerAdapter {
             LogStore logStore = LogStore.getInstance();
             int statId = Integer.parseInt(start);
             int endId = Integer.parseInt(end);
-            logStore.init(statId,endId);
+            logStore.init(statId,endId,Constants.DATA_HOME);
             logger.info(schemaTable + "-"+statId +"-"+endId);
             long startConsumer = System.currentTimeMillis();
             for (int i=0;i<3;i++){

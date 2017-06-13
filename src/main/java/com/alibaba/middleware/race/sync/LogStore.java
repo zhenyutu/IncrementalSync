@@ -46,10 +46,15 @@ public class LogStore {
     private Map<Long,Integer> addMap = new HashMap<>();
     private boolean[] finishArr = null;
 
-    public void init(int start,int end)throws Exception{
+    public void init(int start,int end,String path)throws Exception{
         logger.info("get into the init");
         resultBuffer = ByteBuffer.allocate((end-start+1)*20);
         finishArr = new boolean[end-start+1];
+
+        String f = path + "/1.txt";
+        ByteBuffer b = ByteBuffer.allocate(400);
+        new RandomAccessFile(f, "r").getChannel().read(b);
+        logger.info(Arrays.toString(b.array()));
     }
 
     public void pullBytesFormFile(String path) throws Exception {
