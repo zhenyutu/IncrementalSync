@@ -1,5 +1,7 @@
 package com.alibaba.middleware.race.sync;
 
+import java.io.IOException;
+import java.nio.ByteBuffer;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -33,7 +35,7 @@ public class Server {
         Server.map = map;
     }
 
-    public static void main(String[] args) throws InterruptedException {
+    public static void main(String[] args) throws Exception {
         initProperties();
         Logger logger = LoggerFactory.getLogger(Server.class);
         Server server = new Server();
@@ -47,7 +49,10 @@ public class Server {
         // 第四个参数是end pk Id
         logger.info("end:" + args[3]);
 
-        server.startServer(5527,args[0],args[1],args[2],args[3]);
+        ByteBuffer buffer = getData(logger,args[2],args[3]);
+
+        server.startServer(5527,buffer);
+//        server.startServer(5527,args[0],args[1],args[2],args[3]);
 //        server.startServer(5527,"middleware5","student","100","200");
     }
 
@@ -67,7 +72,7 @@ public class Server {
     }
 
 
-    private void startServer(int port,final String schema,final String table,final String start,final String end) throws InterruptedException {
+    private void startServer(int port,final ByteBuffer buffer) throws InterruptedException {
         EventLoopGroup bossGroup = new NioEventLoopGroup();
         EventLoopGroup workerGroup = new NioEventLoopGroup();
         try {
@@ -79,7 +84,7 @@ public class Server {
                     @Override
                     public void initChannel(SocketChannel ch) throws Exception {
                         // 注册handler
-                        ch.pipeline().addLast(new ServerDemoInHandler(schema,table,start,end));
+                        ch.pipeline().addLast(new ServerDemoInHandler(buffer));
                         ch.pipeline().addLast("encoder", new LengthFieldPrepender(4, false));
                     }
                 })
@@ -93,5 +98,25 @@ public class Server {
             workerGroup.shutdownGracefully();
             bossGroup.shutdownGracefully();
         }
+    }
+
+    private static ByteBuffer getData(Logger logger, String start, String end)throws Exception{
+        logger.info("get into the getData");
+        LogStore logStore = LogStore.getInstance();
+        int statId = Integer.parseInt(start);
+        int endId = Integer.parseInt(end);
+        logStore.init(statId,endId,Constants.DATA_HOME);
+//        logger.info(schemaTable + "-"+statId +"-"+endId);
+        long startConsumer = System.currentTimeMillis();
+        for (int i=0;i<3;i++){
+            new ProduceThread(logStore,Constants.DATA_HOME).start();
+        }
+        logStore.parseBytes("middleware5|student",Integer.parseInt(start),Integer.parseInt(end));
+        logger.info("finish the parse");
+        ByteBuffer buffer = logStore.parse();
+        long endConsumer = System.currentTimeMillis();
+        logger.info("the cost time: "+(endConsumer-startConsumer));
+
+        return buffer;
     }
 }

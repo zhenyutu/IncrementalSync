@@ -22,18 +22,12 @@ import java.util.zip.Inflater;
  * 处理client端的请求 Created by wanshao on 2017/5/25.
  */
 public class ServerDemoInHandler extends ChannelInboundHandlerAdapter {
-    private String schema;
-    private String table;
-    private String start;
-    private String end;
+    private ByteBuffer buffer;
 
     private static Logger logger = LoggerFactory.getLogger(Server.class);
 
-    public ServerDemoInHandler(String schema,String table,String start,String end){
-        this.schema = schema;
-        this.table = table;
-        this.start = start;
-        this.end = end;
+    public ServerDemoInHandler(ByteBuffer buffer){
+        this.buffer = buffer;
     }
 
     public static String getIPString(ChannelHandlerContext ctx) {
@@ -62,42 +56,40 @@ public class ServerDemoInHandler extends ChannelInboundHandlerAdapter {
         logger.info("com.alibaba.middleware.race.sync.Client said:" + resultStr);
         logger.info("begin to run...");
 
-        String schemaTable = schema+"|"+table;
-        ByteBuffer buffer;
 
-        if ("middleware2|teacher".equals(schemaTable)){
-            logger.info("get into the teacher");
-            LogStore2 logStore2 = LogStore2.getInstance();
-            int statId = Integer.parseInt(start);
-            int endId = Integer.parseInt(end);
-            logStore2.init(statId,endId);
-            logger.info(schemaTable + "-"+statId +"-"+endId);
-            long startConsumer = System.currentTimeMillis();
-            for (int i=0;i<3;i++){
-                new ProduceThread2(logStore2,Constants.DATA_HOME).start();
-            }
-            logStore2.parseBytes(schemaTable,Integer.parseInt(start),Integer.parseInt(end));
-            logger.info("finish the parse");
-            buffer = logStore2.parse();
-            long endConsumer = System.currentTimeMillis();
-            logger.info("the cost time: "+(endConsumer-startConsumer));
-        }else {
-            logger.info("get into the student");
-            LogStore logStore = LogStore.getInstance();
-            int statId = Integer.parseInt(start);
-            int endId = Integer.parseInt(end);
-            logStore.init(statId,endId,Constants.DATA_HOME);
-            logger.info(schemaTable + "-"+statId +"-"+endId);
-            long startConsumer = System.currentTimeMillis();
-            for (int i=0;i<3;i++){
-                new ProduceThread(logStore,Constants.DATA_HOME).start();
-            }
-            logStore.parseBytes("middleware5|student",Integer.parseInt(start),Integer.parseInt(end));
-            logger.info("finish the parse");
-            buffer = logStore.parse();
-            long endConsumer = System.currentTimeMillis();
-            logger.info("the cost time: "+(endConsumer-startConsumer));
-        }
+//        if ("middleware2|teacher".equals(schemaTable)){
+//            logger.info("get into the teacher");
+//            LogStore2 logStore2 = LogStore2.getInstance();
+//            int statId = Integer.parseInt(start);
+//            int endId = Integer.parseInt(end);
+//            logStore2.init(statId,endId);
+//            logger.info(schemaTable + "-"+statId +"-"+endId);
+//            long startConsumer = System.currentTimeMillis();
+//            for (int i=0;i<3;i++){
+//                new ProduceThread2(logStore2,Constants.DATA_HOME).start();
+//            }
+//            logStore2.parseBytes(schemaTable,Integer.parseInt(start),Integer.parseInt(end));
+//            logger.info("finish the parse");
+//            buffer = logStore2.parse();
+//            long endConsumer = System.currentTimeMillis();
+//            logger.info("the cost time: "+(endConsumer-startConsumer));
+//        }else {
+//            logger.info("get into the student");
+//            LogStore logStore = LogStore.getInstance();
+//            int statId = Integer.parseInt(start);
+//            int endId = Integer.parseInt(end);
+//            logStore.init(statId,endId,Constants.DATA_HOME);
+//            logger.info(schemaTable + "-"+statId +"-"+endId);
+//            long startConsumer = System.currentTimeMillis();
+//            for (int i=0;i<3;i++){
+//                new ProduceThread(logStore,Constants.DATA_HOME).start();
+//            }
+//            logStore.parseBytes("middleware5|student",Integer.parseInt(start),Integer.parseInt(end));
+//            logger.info("finish the parse");
+//            buffer = logStore.parse();
+//            long endConsumer = System.currentTimeMillis();
+//            logger.info("the cost time: "+(endConsumer-startConsumer));
+//        }
 
         byte[] data = new byte[buffer.limit()];
         buffer.get(data);

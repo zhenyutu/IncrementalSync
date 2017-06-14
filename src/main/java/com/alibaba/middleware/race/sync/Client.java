@@ -26,9 +26,8 @@ public class Client {
     private volatile EventLoopGroup workerGroup;
     private volatile Bootstrap bootstrap;
 
-    private static Logger logger = LoggerFactory.getLogger(Client.class);
-
     public static void main(String[] args) throws Exception {
+        Logger logger = LoggerFactory.getLogger(Client.class);
         initProperties();
         logger.info("Welcome");
         // 从args获取server端的ip
@@ -36,7 +35,7 @@ public class Client {
         logger.info("ip:"+ip);
 //        ip = "127.0.0.1";
         Client client = new Client();
-        client.connect(ip, port);
+        client.connect(logger,ip, port);
 
     }
 
@@ -46,7 +45,7 @@ public class Client {
         System.setProperty("app.logging.level", Constants.LOG_LEVEL);
     }
 
-    public void connect(String host, int port) throws Exception {
+    public void connect(Logger logger,String host, int port) throws Exception {
         workerGroup = new NioEventLoopGroup();
         bootstrap = new Bootstrap();
 
@@ -62,11 +61,11 @@ public class Client {
                 ch.pipeline().addLast(new ClientDemoInHandler(workerGroup));
             }
         });
-        doConnect(host,port);
+        doConnect(logger,host,port);
 
     }
 
-    private void doConnect(final String host, final int port) {
+    private void doConnect(final Logger logger,final String host, final int port) {
 
         ChannelFuture future = bootstrap.connect(new InetSocketAddress(host, port));
 
@@ -79,9 +78,9 @@ public class Client {
                     f.channel().eventLoop().schedule( new Runnable() {
                         @Override
                         public void run() {
-                            doConnect(host,port);
+                            doConnect(logger,host,port);
                         }
-                    }, 1, TimeUnit.SECONDS);
+                    }, 100, TimeUnit.MILLISECONDS);
                 }
             }
         });
