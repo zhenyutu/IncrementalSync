@@ -46,15 +46,10 @@ public class LogStore {
     private Map<Long,Integer> addMap = new HashMap<>();
     private boolean[] finishArr = null;
 
-    public void init(int start,int end,String path)throws Exception{
+    public void init(int start,int end)throws Exception{
         logger.info("get into the init");
         resultBuffer = ByteBuffer.allocate((end-start+1)*20);
         finishArr = new boolean[end-start+1];
-
-        String f = path + "/1.txt";
-        ByteBuffer b = ByteBuffer.allocate(400);
-        new RandomAccessFile(f, "r").getChannel().read(b);
-        logger.info(Arrays.toString(b.array()));
     }
 
     public void pullBytesFormFile(String path) throws Exception {
@@ -100,16 +95,16 @@ public class LogStore {
         }
     }
 
-    public void parseBytes(String schemaTable,int start,int end)throws Exception{
+    public void parseBytes(int start,int end)throws Exception{
         logger.info("get into the parseBytes");
         byte[] logs;
         byte[] lastLogs = null;
         int num = 0;
         while (true){
             logs = bufferQueue.take();
-            lastLogs = parseBytesFromQueue(logs,lastLogs,schemaTable,start,end);
+            lastLogs = parseBytesFromQueue(logs,lastLogs,start,end);
             if(logs.length != PAGE_SIZE){
-                operate(logs,schemaTable,-2,lastLogs.length,start,end);
+                operate(logs,-2,lastLogs.length,start,end);
                 num++;
             }
             if(num>9)
@@ -117,7 +112,7 @@ public class LogStore {
         }
     }
 
-    private byte[] parseBytesFromQueue(byte[] bytes,byte[] lastLogs,String schemaTable,int start,int end){
+    private byte[] parseBytesFromQueue(byte[] bytes,byte[] lastLogs,int start,int end){
         byte[] logs = null;
 
         if (lastLogs != null){
@@ -128,7 +123,7 @@ public class LogStore {
             logs = bytes;
         byte[] newLastLogs = null;
         try {
-            newLastLogs = getLogFromBytes(logs, schemaTable, start, end);
+            newLastLogs = getLogFromBytes(logs, start, end);
         }catch (IOException e){
             logger.info("error in the parseBytesFromQueue");
             e.printStackTrace();
@@ -137,7 +132,7 @@ public class LogStore {
         return newLastLogs;
     }
 
-    private byte[] getLogFromBytes(byte[] logs,String schemaTableName,int startId,int endId) throws IOException{
+    private byte[] getLogFromBytes(byte[] logs,int startId,int endId) throws IOException{
         int start = 0, end ,preLogEnd,logEnd= logs.length;
         end =  findFirstByte(logs,start,END_FLAG,1);
         byte[] lastLogs = new byte[end+1];
@@ -147,22 +142,16 @@ public class LogStore {
             preLogEnd = findNextEnt(logs,logEnd,END_FLAG);
             if (preLogEnd==logEnd)
                 break;
-            operate(logs,schemaTableName,preLogEnd,logEnd,startId,endId);
+            operate(logs,preLogEnd,logEnd,startId,endId);
             logEnd = preLogEnd;
         }
 
         return lastLogs;
     }
 
-    private void operate(byte[] logs,String schemaTableName,int preLogEnd,int logEnd,int startId,int endId)throws IOException{
-        int start = findFirstByte(logs,preLogEnd+2,SPLITE_FLAG,2);
-        int end = findFirstByte(logs,start,SPLITE_FLAG,2);
-        String schemaTable = getStrFromBytes(logs,start,end);
-        if (!schemaTableName.equals(schemaTable)){
-            return;
-        }
-        start = end;
-        end = findFirstByte(logs,start,SPLITE_FLAG,1);
+    private void operate(byte[] logs,int preLogEnd,int logEnd,int startId,int endId)throws IOException{
+        int start = findFirstByte(logs,preLogEnd+2,SPLITE_FLAG,4);
+        int end = findFirstByte(logs,start,SPLITE_FLAG,1);
         String operate = getStrFromBytes(logs,start,end);
         start = end;
         switch (operate){
@@ -421,7 +410,7 @@ public class LogStore {
         for (int i=0;i<3;i++){
             new ProduceThread(logStore,path)    .start();
         }
-        logStore.parseBytes("middleware5|student",100,500);
+        logStore.parseBytes(100,500);
         System.out.println("finish the parse");
         ByteBuffer buffer = logStore.parse();
         logStore.flush(buffer);

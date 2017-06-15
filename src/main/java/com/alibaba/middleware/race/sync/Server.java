@@ -105,13 +105,12 @@ public class Server {
         LogStore logStore = LogStore.getInstance();
         int statId = Integer.parseInt(start);
         int endId = Integer.parseInt(end);
-        logStore.init(statId,endId,Constants.DATA_HOME);
-//        logger.info(schemaTable + "-"+statId +"-"+endId);
+        logStore.init(statId,endId);
         long startConsumer = System.currentTimeMillis();
-        for (int i=0;i<3;i++){
+        for (int i=0;i<1;i++){
             new ProduceThread(logStore,Constants.DATA_HOME).start();
         }
-        logStore.parseBytes("middleware5|student",Integer.parseInt(start),Integer.parseInt(end));
+        logStore.parseBytes(Integer.parseInt(start),Integer.parseInt(end));
         logger.info("finish the parse");
         ByteBuffer buffer = logStore.parse();
         long endConsumer = System.currentTimeMillis();
