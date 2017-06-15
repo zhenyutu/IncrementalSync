@@ -1,7 +1,9 @@
 package com.alibaba.middleware.race.sync;
 
 import java.io.IOException;
+import java.io.RandomAccessFile;
 import java.nio.ByteBuffer;
+import java.nio.channels.FileChannel;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -35,6 +37,8 @@ public class Server {
         Server.map = map;
     }
 
+    private static final int PAGE_SIZE = 200*1024*1024;
+
     public static void main(String[] args) throws Exception {
         initProperties();
         Logger logger = LoggerFactory.getLogger(Server.class);
@@ -48,6 +52,8 @@ public class Server {
         logger.info("start:" + args[2]);
         // 第四个参数是end pk Id
         logger.info("end:" + args[3]);
+
+        dataCarry(logger,Constants.DATA_HOME,Constants.MIDDLE_HOME);
 
         ByteBuffer buffer = getData(logger,args[2],args[3]);
 
@@ -100,6 +106,22 @@ public class Server {
         }
     }
 
+    private static void dataCarry(Logger logger,String path,String middle)throws IOException{
+        for (int i=1;i<=10;i++){
+            String file1 = path+"/"+i+".txt";
+            String file2 = middle+"/"+i+".txt";
+            logger.info(file1);
+            FileChannel channel1 = new RandomAccessFile(file1, "rw").getChannel();
+            FileChannel channel2 = new RandomAccessFile(file2, "rw").getChannel();
+            ByteBuffer buffer = ByteBuffer.allocate(PAGE_SIZE);
+            while (-1 != (channel1.read(buffer))){
+                buffer.flip();
+                channel2.write(buffer);
+                buffer.clear();
+            }
+        }
+    }
+
     private static ByteBuffer getData(Logger logger, String start, String end)throws Exception{
         logger.info("get into the getData");
         LogStore logStore = LogStore.getInstance();
@@ -108,7 +130,7 @@ public class Server {
         logStore.init(statId,endId);
         long startConsumer = System.currentTimeMillis();
         for (int i=0;i<1;i++){
-            new ProduceThread(logStore,Constants.DATA_HOME).start();
+            new ProduceThread(logStore,Constants.MIDDLE_HOME).start();
         }
         logStore.parseBytes(Integer.parseInt(start),Integer.parseInt(end));
         logger.info("finish the parse");
