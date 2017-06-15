@@ -117,28 +117,31 @@ public class LogStore {
         }
     }
 
-    private byte[] parseBytesFromQueue(byte[] bytes,byte[] lastLogs,int start,int end){
-        byte[] logs = null;
+    private byte[] parseBytesFromQueue(byte[] bytes,byte[] lastLogs,int start,int end)throws IOException{
+        byte[] logs ;
+        byte[] newLastLogs;
 
         if (lastLogs != null){
-            logs = new byte[lastLogs.length+bytes.length];
-            System.arraycopy(bytes, 0, logs, 0, bytes.length);
-            System.arraycopy(lastLogs, 0, logs, bytes.length, lastLogs.length);
-        }else
+            int firstEnd = findFirstEnt(bytes,bytes.length-1,END_FLAG);
+            int length = bytes.length-firstEnd-1;
+            byte[] log = new byte[lastLogs.length+length];
+            System.arraycopy(bytes, firstEnd+1, log, 0,length);
+            System.arraycopy(lastLogs, 0, log, length, lastLogs.length);
+            operate(log,-2,log.length-1,start,end);
+
             logs = bytes;
-        byte[] newLastLogs = null;
-        try {
-            newLastLogs = getLogFromBytes(logs, start, end);
-        }catch (IOException e){
-            logger.info("error in the parseBytesFromQueue");
-            e.printStackTrace();
+            newLastLogs = getLogFromBytes(logs,firstEnd, start, end);
+
+        }else{
+            logs = bytes;
+            newLastLogs = getLogFromBytes(logs,logs.length, start, end);
         }
 
         return newLastLogs;
     }
 
-    private byte[] getLogFromBytes(byte[] logs,int startId,int endId) throws IOException{
-        int start = 0, end ,preLogEnd,logEnd= logs.length;
+    private byte[] getLogFromBytes(byte[] logs,int logEnd,int startId,int endId) throws IOException{
+        int start = 0, end ,preLogEnd;
         end =  findFirstByte(logs,start,END_FLAG,1);
         byte[] lastLogs = new byte[end+1];
         System.arraycopy(logs,0,lastLogs,0,end+1);
@@ -173,11 +176,17 @@ public class LogStore {
         }
     }
 
-    private String getStrFromBytes(byte[] logs,int start,int end){
-        byte[] schemaBytes = new byte[end-start-1];
-        System.arraycopy(logs,start+1,schemaBytes,0,end-start-1);
-        return new String(schemaBytes);
+    private static int findFirstEnt(byte[] logs,int start,byte value){
+        int index = start;
+        for (int i=start;i>=0;i--){
+            if (logs[i] == value){
+                index = i;
+                break;
+            }
+        }
+        return index;
     }
+
 
     private int findFirstByte(byte[] logs,int start,byte value,int num){
         int index = start;
