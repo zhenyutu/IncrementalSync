@@ -54,6 +54,7 @@ public class ClientDemoInHandler extends ChannelInboundHandlerAdapter {
         encoded.writeBytes(msg.getBytes());
         ctx.write(encoded);
         ctx.flush();
+        logger.info("finish write and flash");
     }
 
     private void writeBytes(byte[] bytes) throws IOException{
