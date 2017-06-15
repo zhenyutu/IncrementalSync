@@ -71,10 +71,7 @@ public class Client {
 
         future.addListener(new ChannelFutureListener() {
             public void operationComplete(ChannelFuture f) throws Exception {
-                if (f.isSuccess()) {
-                    logger.info("Started Tcp Client successfully");
-                } else {
-                    logger.info("Started Tcp Client Failed");
+                if (!f.isSuccess()) {
                     f.channel().eventLoop().schedule( new Runnable() {
                         @Override
                         public void run() {
