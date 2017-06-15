@@ -27,8 +27,8 @@ public class Client {
     private volatile Bootstrap bootstrap;
 
     public static void main(String[] args) throws Exception {
-        Logger logger = LoggerFactory.getLogger(Client.class);
         initProperties();
+        Logger logger = LoggerFactory.getLogger(Client.class);
         logger.info("Welcome");
         // 从args获取server端的ip
         ip = args[0];
@@ -71,16 +71,14 @@ public class Client {
 
         future.addListener(new ChannelFutureListener() {
             public void operationComplete(ChannelFuture f) throws Exception {
-                if (f.isSuccess()) {
-                    logger.info("Started Tcp Client successfully");
-                } else {
+                if (!f.isSuccess()) {
                     logger.info("Started Tcp Client Failed");
                     f.channel().eventLoop().schedule( new Runnable() {
                         @Override
                         public void run() {
                             doConnect(logger,host,port);
                         }
-                    }, 100, TimeUnit.MILLISECONDS);
+                    }, 1, TimeUnit.SECONDS);
                 }
             }
         });
