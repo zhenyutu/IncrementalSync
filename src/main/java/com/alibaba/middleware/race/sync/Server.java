@@ -157,6 +157,7 @@ public class Server {
         ByteBuffer buffer = logStore.parse();
         long endConsumer = System.currentTimeMillis();
         logger.info("the cost time: "+(endConsumer-startConsumer));
+        logger.info("buffer length:"+buffer.array().length);
 
         return buffer;
     }
