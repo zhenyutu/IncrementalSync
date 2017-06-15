@@ -34,6 +34,11 @@ public class LogStore {
     private static final byte SCORE_FLAG = (byte)111;
     private static final byte EMPTY_FLAG = (byte)0;
 
+    private static final byte INSERT_FLAG = (byte)73;
+    private static final byte UPDATE_FLAG = (byte)85;
+    private static final byte DELETE_FLAG = (byte)68;
+
+
     private ArrayBlockingQueue<byte[]> bufferQueue = new ArrayBlockingQueue<>(4);
     private Map<Integer,Long> filePositionMap = new HashMap<>();
     private Map<Integer,FileChannel> fileChannelMap = new HashMap<>();
@@ -151,17 +156,16 @@ public class LogStore {
 
     private void operate(byte[] logs,int preLogEnd,int logEnd,int startId,int endId)throws IOException{
         int start = findFirstByte(logs,preLogEnd+2,SPLITE_FLAG,4);
-        int end = findFirstByte(logs,start,SPLITE_FLAG,1);
-        String operate = getStrFromBytes(logs,start,end);
-        start = end;
+        byte operate = logs[start+1];
+        start = findFirstByte(logs,start,SPLITE_FLAG,1);
         switch (operate){
-            case "I":
+            case INSERT_FLAG:
                 insertOperate(logs, start, logEnd,startId,endId);
                 break;
-            case "U":
+            case UPDATE_FLAG:
                 updateOperate(logs, start, logEnd,startId,endId);
                 break;
-            case "D":
+            case DELETE_FLAG:
                 deleteOperate(logs, start, logEnd,startId,endId);
                 break;
             default:
