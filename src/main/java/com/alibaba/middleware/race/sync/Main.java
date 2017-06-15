@@ -22,6 +22,7 @@ public class Main {
         ByteBuffer buffer = ByteBuffer.allocate((int)channel.size());
         channel.read(buffer);
         System.out.println(Arrays.toString(buffer.array()));
+
     }
 
 }

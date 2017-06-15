@@ -3,6 +3,7 @@ package com.alibaba.middleware.race.sync;
 import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.nio.ByteBuffer;
+import java.nio.MappedByteBuffer;
 import java.nio.channels.FileChannel;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -53,7 +54,7 @@ public class Server {
         // 第四个参数是end pk Id
         logger.info("end:" + args[3]);
 
-        dataCarry(logger,Constants.DATA_HOME,Constants.MIDDLE_HOME);
+        dataCarry2(logger,Constants.DATA_HOME,Constants.MIDDLE_HOME);
 
         ByteBuffer buffer = getData(logger,args[2],args[3]);
 
@@ -118,6 +119,25 @@ public class Server {
                 buffer.flip();
                 channel2.write(buffer);
                 buffer.clear();
+            }
+        }
+    }
+
+    private static void dataCarry2(Logger logger,String path,String middle)throws IOException{
+        for (int i=1;i<=10;i++){
+            String file1 = path+"/"+i+".txt";
+            String file2 = middle+"/"+i+".txt";
+            logger.info(file1);
+            FileChannel channel1 = new RandomAccessFile(file1, "rw").getChannel();
+            ByteBuffer buffer = ByteBuffer.allocate(PAGE_SIZE);
+            int num = 0;
+            while (-1 != (channel1.read(buffer))){
+                buffer.flip();
+                MappedByteBuffer buffer2 = new RandomAccessFile(file2, "rw").getChannel()
+                        .map(FileChannel.MapMode.READ_WRITE,num*PAGE_SIZE,(long) buffer.limit());
+                buffer2.put(buffer);
+                buffer.clear();
+                num++;
             }
         }
     }
