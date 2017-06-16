@@ -54,9 +54,9 @@ public class Server {
         // 第四个参数是end pk Id
         logger.info("end:" + args[3]);
 
-        dataCarry(logger,Constants.DATA_HOME,Constants.MIDDLE_HOME);
-
-        ByteBuffer buffer = getData(logger,args[2],args[3]);
+//        dataCarry(logger,Constants.DATA_HOME,Constants.MIDDLE_HOME);
+//
+//        ByteBuffer buffer = getData(logger,args[2],args[3]);
 
         logger.info("start the server");
         server.startServer(5527);
