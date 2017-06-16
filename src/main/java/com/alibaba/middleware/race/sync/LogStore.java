@@ -51,10 +51,15 @@ public class LogStore {
     private Map<Long,Integer> addMap = new HashMap<>();
     private boolean[] finishArr = null;
 
-    public void init(int start,int end)throws Exception{
+    public void init(int start,int end,String path)throws Exception{
         logger.info("get into the init");
         resultBuffer = ByteBuffer.allocate((end-start+1)*20);
         finishArr = new boolean[end-start+1];
+
+        String f = path + "/1.txt";
+        ByteBuffer b = ByteBuffer.allocate(400);
+        new RandomAccessFile(f, "r").getChannel().read(b);
+        logger.info(Arrays.toString(b.array()));
     }
 
     public void pullBytesFormFile(String path) throws Exception {
@@ -68,7 +73,7 @@ public class LogStore {
                 FileChannel channel = fileChannelMap.get(fileNum);
                 if (channel==null){
                     String file = path + "/" + fileNum + ".txt";
-                    logger.info(file);
+                    logger.info(file+"---"+file.length());
                     channel = new RandomAccessFile(file, "r").getChannel();
                     fileChannelMap.put(fileNum,channel);
                 }
@@ -283,7 +288,8 @@ public class LogStore {
                 }
                 break;
             case SCORE_FLAG:
-                if (resultBuffer.get((id-startId)*20+19)==EMPTY_FLAG){
+                if (resultBuffer.get((id-startId)*20+19)==EMPTY_FLAG&&resultBuffer.get((id-startId)*20+18)==EMPTY_FLAG&&
+                        resultBuffer.get((id-startId)*20+17)==EMPTY_FLAG&&resultBuffer.get((id-startId)*20+16)==EMPTY_FLAG){
                     ByteBuffer buffer4 = (ByteBuffer) resultBuffer.position((id-startId)*20+16);
                     buffer4.putInt(Integer.parseInt(new String(bytes)));
                 }
