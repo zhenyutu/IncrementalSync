@@ -58,7 +58,8 @@ public class Server {
 
         ByteBuffer buffer = getData(logger,args[2],args[3]);
 
-        server.startServer(5527,buffer);
+        logger.info("start the server");
+        server.startServer(5527);
 //        server.startServer(5527,args[0],args[1],args[2],args[3]);
 //        server.startServer(5527,"middleware5","student","100","200");
     }
@@ -79,7 +80,7 @@ public class Server {
     }
 
 
-    private void startServer(int port,final ByteBuffer buffer) throws InterruptedException {
+    private void startServer(int port) throws InterruptedException {
         EventLoopGroup bossGroup = new NioEventLoopGroup();
         EventLoopGroup workerGroup = new NioEventLoopGroup();
         try {
@@ -91,7 +92,7 @@ public class Server {
                     @Override
                     public void initChannel(SocketChannel ch) throws Exception {
                         // 注册handler
-                        ch.pipeline().addLast(new ServerDemoInHandler(buffer));
+                        ch.pipeline().addLast(new ServerDemoInHandler());
                         ch.pipeline().addLast("encoder", new LengthFieldPrepender(4, false));
                     }
                 })

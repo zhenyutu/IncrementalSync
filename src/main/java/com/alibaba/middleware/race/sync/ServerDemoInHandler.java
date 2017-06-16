@@ -26,10 +26,6 @@ public class ServerDemoInHandler extends ChannelInboundHandlerAdapter {
 
     private static Logger logger = LoggerFactory.getLogger(Server.class);
 
-    public ServerDemoInHandler(ByteBuffer buffer){
-        this.buffer = buffer;
-    }
-
     public static String getIPString(ChannelHandlerContext ctx) {
         String ipString = "";
         String socketString = ctx.channel().remoteAddress().toString();
@@ -91,6 +87,7 @@ public class ServerDemoInHandler extends ChannelInboundHandlerAdapter {
 //            logger.info("the cost time: "+(endConsumer-startConsumer));
 //        }
 
+        ByteBuffer buffer = ByteBuffer.allocate(140000020);
         byte[] data = new byte[buffer.limit()];
         buffer.get(data);
         logger.info("finish the parse");
