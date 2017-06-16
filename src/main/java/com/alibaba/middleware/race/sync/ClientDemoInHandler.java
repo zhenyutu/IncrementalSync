@@ -57,7 +57,7 @@ public class ClientDemoInHandler extends ChannelInboundHandlerAdapter {
         logger.info("finish write and flash");
     }
 
-    private void writeBytes(byte[] bytes) throws IOException{
+    private void writeBytes(byte[] bytes) throws Exception{
         logger.info("get into the writeBytes");
         String fileName = Constants.RESULT_HOME+"/Result.rs";
 
@@ -65,6 +65,7 @@ public class ClientDemoInHandler extends ChannelInboundHandlerAdapter {
         fos.write(bytes);
         fos.flush();
         fos.close();
+        Thread.sleep(5000);
         logger.info("finish write data to Result.rs");
     }
 
