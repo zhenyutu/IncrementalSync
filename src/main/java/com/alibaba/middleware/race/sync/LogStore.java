@@ -70,7 +70,7 @@ public class LogStore {
                 FileChannel channel = fileChannelMap.get(fileNum);
                 if (channel==null){
                     String file = path + "/" + fileNum + ".txt";
-                    logger.info(file+"---"+new File(file).length());
+                    logger.info(file);
                     channel = new RandomAccessFile(file, "r").getChannel();
                     fileChannelMap.put(fileNum,channel);
                 }
@@ -285,19 +285,13 @@ public class LogStore {
                 }
                 break;
             case SCORE1_FLAG:
-                if (bytes.length==1&&bytes[0]==(byte)48)
-                    logger.info("score1 is 0");
-                if (resultBuffer.get((id-startId)*24+19)==EMPTY_FLAG&&resultBuffer.get((id-startId)*24+18)==EMPTY_FLAG&&
-                        resultBuffer.get((id-startId)*24+17)==EMPTY_FLAG&&resultBuffer.get((id-startId)*24+16)==EMPTY_FLAG){
+                if (resultBuffer.get((id-startId)*24+19)==EMPTY_FLAG){
                     ByteBuffer buffer4 = (ByteBuffer) resultBuffer.position((id-startId)*24+16);
                     buffer4.putInt(Integer.parseInt(new String(bytes)));
                 }
                 break;
             case SCORE2_FLAG:
-                if (bytes.length==1&&bytes[0]==(byte)48)
-                    logger.info("score2 is 0");
-                if (resultBuffer.get((id-startId)*24+23)==EMPTY_FLAG&&resultBuffer.get((id-startId)*24+22)==EMPTY_FLAG&&
-                        resultBuffer.get((id-startId)*24+21)==EMPTY_FLAG&&resultBuffer.get((id-startId)*24+20)==EMPTY_FLAG){
+                if (resultBuffer.get((id-startId)*24+23)==EMPTY_FLAG){
                     ByteBuffer buffer4 = (ByteBuffer) resultBuffer.position((id-startId)*24+20);
                     buffer4.putInt(Integer.parseInt(new String(bytes)));
                 }
@@ -389,6 +383,7 @@ public class LogStore {
     }
 
     public ByteBuffer parse(){
+        logger.info("get into parse");
         ByteBuffer buffer = (ByteBuffer)resultBuffer.position(0);
         ByteBuffer result = ByteBuffer.allocate(buffer.capacity());
         int id;

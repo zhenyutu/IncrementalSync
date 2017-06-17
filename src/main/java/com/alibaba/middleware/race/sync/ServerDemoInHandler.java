@@ -116,7 +116,7 @@ public class ServerDemoInHandler extends ChannelInboundHandlerAdapter {
         for (int i=1;i<=10;i++){
             String file1 = path+"/"+i+".txt";
             String file2 = middle+"/"+i+".txt";
-            logger.info(file1+"---"+new File(file1).length());
+            logger.info(file1);
             FileChannel channel1 = new RandomAccessFile(file1, "rw").getChannel();
             FileChannel channel2 = new RandomAccessFile(file2, "rw").getChannel();
             ByteBuffer buffer = ByteBuffer.allocate(PAGE_SIZE);
@@ -132,7 +132,7 @@ public class ServerDemoInHandler extends ChannelInboundHandlerAdapter {
         for (int i=1;i<=10;i++){
             String file1 = path+"/"+i+".txt";
             String file2 = middle+"/"+i+".txt";
-            logger.info(file1+"-"+new File(file1).length());
+            logger.info(file1);
             FileChannel channel1 = new RandomAccessFile(file1, "rw").getChannel();
             ByteBuffer buffer = ByteBuffer.allocate(PAGE_SIZE);
             int num = 0;
