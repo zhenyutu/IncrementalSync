@@ -56,11 +56,11 @@ public class Server {
 
         dataCarry(logger,Constants.DATA_HOME,Constants.MIDDLE_HOME);
 
-        ByteBuffer buffer = getData(logger,args[2],args[3]);
+        getData(logger,args[2],args[3]);
 
         logger.info("start the server");
 //        server.startServer(5527,args[2],args[3]);
-        server.startServer(5527, buffer);
+        server.startServer(5527);
 //        server.startServer(5527,args[0],args[1],args[2],args[3]);
 //        server.startServer(5527,"middleware5","student","100","200");
     }
@@ -81,7 +81,7 @@ public class Server {
     }
 
 
-    private void startServer(int port, final ByteBuffer buffer) throws InterruptedException {
+    private void startServer(int port) throws InterruptedException {
         EventLoopGroup bossGroup = new NioEventLoopGroup();
         EventLoopGroup workerGroup = new NioEventLoopGroup();
         try {
@@ -93,7 +93,7 @@ public class Server {
                     @Override
                     public void initChannel(SocketChannel ch) throws Exception {
                         // 注册handler
-                        ch.pipeline().addLast(new ServerDemoInHandler(buffer));
+                        ch.pipeline().addLast(new ServerDemoInHandler());
                         ch.pipeline().addLast("encoder", new LengthFieldPrepender(4, false));
                     }
                 })
@@ -125,7 +125,7 @@ public class Server {
         }
     }
 
-    private static ByteBuffer getData(Logger logger, String start, String end)throws Exception{
+    private static void getData(Logger logger, String start, String end)throws Exception{
         logger.info("get into the getData");
         LogStore logStore = LogStore.getInstance();
         int statId = Integer.parseInt(start);
@@ -136,12 +136,8 @@ public class Server {
             new ProduceThread(logStore,Constants.MIDDLE_HOME).start();
         }
         logStore.parseBytes(Integer.parseInt(start),Integer.parseInt(end));
-        logger.info("finish the parse");
-        ByteBuffer buffer = logStore.parse();
+        logger.info("finish the solve");
         long endConsumer = System.currentTimeMillis();
         logger.info("the cost time: "+(endConsumer-startConsumer));
-        logger.info("buffer length:"+buffer.array().length);
-
-        return buffer;
     }
 }

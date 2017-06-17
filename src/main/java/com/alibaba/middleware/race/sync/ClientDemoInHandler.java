@@ -64,7 +64,6 @@ public class ClientDemoInHandler extends ChannelInboundHandlerAdapter {
         fos.write(bytes);
         fos.flush();
         fos.close();
-        Thread.sleep(5000);
         logger.info("finish write data to Result.rs");
     }
 

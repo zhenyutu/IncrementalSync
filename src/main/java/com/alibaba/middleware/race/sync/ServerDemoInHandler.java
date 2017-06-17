@@ -28,7 +28,7 @@ import java.util.zip.Inflater;
 public class ServerDemoInHandler extends ChannelInboundHandlerAdapter {
 //    private String start;
 //    private String end;
-    private ByteBuffer buffer;
+//    private ByteBuffer buffer;
 
     private static final int PAGE_SIZE = 20*1024*1024;
 
@@ -39,9 +39,9 @@ public class ServerDemoInHandler extends ChannelInboundHandlerAdapter {
 //        this.end = end;
 //    }
 
-    public ServerDemoInHandler(ByteBuffer buffer){
-        this.buffer = buffer;
-    }
+//    public ServerDemoInHandler(ByteBuffer buffer){
+//        this.buffer = buffer;
+//    }
 
     public static String getIPString(ChannelHandlerContext ctx) {
         String ipString = "";
@@ -74,6 +74,8 @@ public class ServerDemoInHandler extends ChannelInboundHandlerAdapter {
 //
 //        ByteBuffer buffer = getData(start,end);
 
+        LogStore logStore = LogStore.getInstance();
+        ByteBuffer buffer = logStore.parse();
         byte[] data = new byte[buffer.limit()];
         buffer.get(data);
         logger.info("finish the parse");
