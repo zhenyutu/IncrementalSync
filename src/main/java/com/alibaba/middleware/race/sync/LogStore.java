@@ -29,11 +29,11 @@ public class LogStore {
     private static final byte END_FLAG = (byte)10;
     private static final byte SPACE_FLAG = (byte)9;
 
-    private static final byte FIRST_FLAG = (byte)95;
-    private static final byte LAST_FLAG = (byte)110;
-    private static final byte SEX_FLAG = (byte)58;
+    private static final byte FIRST_FLAG = (byte)110;
+    private static final byte LAST_FLAG = (byte)97;
+    private static final byte SEX_FLAG = (byte)48;
     private static final byte SCORE1_FLAG = (byte)49;
-    private static final byte SCORE2_FLAG = (byte)50;
+    private static final byte SCORE2_FLAG = (byte)58;
     private static final byte EMPTY_FLAG = (byte)0;
 
     private static final byte INSERT_FLAG = (byte)73;
@@ -256,7 +256,7 @@ public class LogStore {
         buffer.putInt(id);
         for (int n = 0;;n=n+2){
             if (position+2<end){
-                byte tag = logs[position+6];
+                byte tag = logs[position+7];
                 byte[] tmp = findSingleStr(logs,position,SPLITE_FLAG,3);
                 updateTag(id,tag,tmp,startId);
             }else {
@@ -311,20 +311,20 @@ public class LogStore {
             if (id>startId&&id<endId){ //范围之内且未进行最终操作
                 if (!finishArr[(int)id-startId]){
                     for (;position+2<end;){
-                        byte tag = logs[position+6];
+                        byte tag = logs[position+7];
                         byte[] tmp = findSingleStr(logs,position,SPLITE_FLAG,3);
                         updateTag((int)id,tag,tmp,startId);
                     }
                 }else if (addMap.keySet().contains(id)){
                     for (;position+2<end;){
-                        byte tag = logs[position+6];
+                        byte tag = logs[position+7];
                         byte[] tmp = findSingleStr(logs,position,SPLITE_FLAG,3);
                         updateTag(addMap.get(id),tag,tmp,startId);
                     }
                 }
             }else if ((id<=startId||id>=endId)&&addMap.keySet().contains(id)){ //范围之外，映射进入范围之内
                 for (;position+2<end;){
-                    byte tag = logs[position+6];
+                    byte tag = logs[position+7];
                     byte[] tmp = findSingleStr(logs,position,SPLITE_FLAG,3);
                     updateTag(addMap.get(id),tag,tmp,startId);
                 }
@@ -342,7 +342,7 @@ public class LogStore {
                 }else {                      //范围之内改到范围之内　删除范围之内的值，添加范围之内的值
                     if (!addMap.keySet().contains(id)){
                         for (;position+2<end;){
-                            byte tag = logs[position+6];
+                            byte tag = logs[position+7];
                             byte[] tmp = findSingleStr(logs,position,SPLITE_FLAG,3);
                             updateTag((int)id,tag,tmp,startId);
                         }
@@ -352,7 +352,7 @@ public class LogStore {
                         addMap.put(lastId,(int)id);
                     }else {
                         for (;position+2<end;){
-                            byte tag = logs[position+6];
+                            byte tag = logs[position+7];
                             byte[] tmp = findSingleStr(logs,position,SPLITE_FLAG,3);
                             updateTag(addMap.get(id),tag,tmp,startId);
                         }
@@ -363,7 +363,7 @@ public class LogStore {
             }else {
                 if (id>startId&&id<endId){   //范围之外改到范围之内　添加范围之外的值
                     for (;position+2<end;){
-                        byte tag = logs[position+6];
+                        byte tag = logs[position+7];
                         byte[] tmp = findSingleStr(logs,position,SPLITE_FLAG,3);
                         updateTag((int)id,tag,tmp,startId);
                     }
@@ -371,7 +371,7 @@ public class LogStore {
                 }else {
                     if (addMap.keySet().contains(id)){
                         for (;position+2<end;){
-                            byte tag = logs[position+6];
+                            byte tag = logs[position+7];
                             byte[] tmp = findSingleStr(logs,position,SPLITE_FLAG,3);
                             updateTag(addMap.get(id),tag,tmp,startId);
                         }
