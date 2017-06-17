@@ -26,16 +26,21 @@ import java.util.zip.Inflater;
  * 处理client端的请求 Created by wanshao on 2017/5/25.
  */
 public class ServerDemoInHandler extends ChannelInboundHandlerAdapter {
-    private String start;
-    private String end;
+//    private String start;
+//    private String end;
+    private ByteBuffer buffer;
 
     private static final int PAGE_SIZE = 20*1024*1024;
 
     private static Logger logger = LoggerFactory.getLogger(Server.class);
 
-    public ServerDemoInHandler(String start,String end){
-        this.start = start;
-        this.end = end;
+//    public ServerDemoInHandler(String start,String end){
+//        this.start = start;
+//        this.end = end;
+//    }
+
+    public ServerDemoInHandler(ByteBuffer buffer){
+        this.buffer = buffer;
     }
 
     public static String getIPString(ChannelHandlerContext ctx) {
@@ -64,10 +69,10 @@ public class ServerDemoInHandler extends ChannelInboundHandlerAdapter {
         logger.info("com.alibaba.middleware.race.sync.Client said:" + resultStr);
         logger.info("begin to run...");
 
-        logger.info("start:"+start+"- end:"+end);
-        dataCarry(Constants.DATA_HOME,Constants.MIDDLE_HOME);
-
-        ByteBuffer buffer = getData(start,end);
+//        logger.info("start:"+start+"- end:"+end);
+//        dataCarry(Constants.DATA_HOME,Constants.MIDDLE_HOME);
+//
+//        ByteBuffer buffer = getData(start,end);
 
         byte[] data = new byte[buffer.limit()];
         buffer.get(data);
