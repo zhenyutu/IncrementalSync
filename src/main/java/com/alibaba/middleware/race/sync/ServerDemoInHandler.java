@@ -28,7 +28,7 @@ public class ServerDemoInHandler extends ChannelInboundHandlerAdapter {
     private String start;
     private String end;
 
-    private static final int PAGE_SIZE = 200*1024*1024;
+    private static final int PAGE_SIZE = 20*1024*1024;
 
     private static Logger logger = LoggerFactory.getLogger(Server.class);
 
