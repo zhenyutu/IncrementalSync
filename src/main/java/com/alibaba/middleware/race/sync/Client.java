@@ -78,7 +78,7 @@ public class Client {
                         public void run() {
                             doConnect(logger,host,port);
                         }
-                    }, 1, TimeUnit.SECONDS);
+                    }, 200, TimeUnit.MILLISECONDS);
                 }
             }
         });
