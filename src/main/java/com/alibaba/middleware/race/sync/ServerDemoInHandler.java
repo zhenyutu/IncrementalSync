@@ -26,18 +26,18 @@ import java.util.zip.Inflater;
  * 处理client端的请求 Created by wanshao on 2017/5/25.
  */
 public class ServerDemoInHandler extends ChannelInboundHandlerAdapter {
-//    private String start;
-//    private String end;
+    private String start;
+    private String end;
 //    private ByteBuffer buffer;
 
     private static final int PAGE_SIZE = 20*1024*1024;
 
     private static Logger logger = LoggerFactory.getLogger(Server.class);
 
-//    public ServerDemoInHandler(String start,String end){
-//        this.start = start;
-//        this.end = end;
-//    }
+    public ServerDemoInHandler(String start,String end){
+        this.start = start;
+        this.end = end;
+    }
 
 //    public ServerDemoInHandler(ByteBuffer buffer){
 //        this.buffer = buffer;
@@ -75,7 +75,7 @@ public class ServerDemoInHandler extends ChannelInboundHandlerAdapter {
 //        ByteBuffer buffer = getData(start,end);
 
         LogStore logStore = LogStore.getInstance();
-        ByteBuffer buffer = logStore.parse();
+        ByteBuffer buffer = logStore.parse(Integer.parseInt(start),Integer.parseInt(end));
         byte[] data = new byte[buffer.limit()];
         buffer.get(data);
         logger.info("finish the parse");
@@ -119,58 +119,24 @@ public class ServerDemoInHandler extends ChannelInboundHandlerAdapter {
         return bos.toByteArray();
     }
 
-    private static void dataCarry(String path,String middle)throws IOException{
-        for (int i=1;i<=10;i++){
-            String file1 = path+"/"+i+".txt";
-            String file2 = middle+"/"+i+".txt";
-            logger.info(file1);
-            FileChannel channel1 = new RandomAccessFile(file1, "rw").getChannel();
-            FileChannel channel2 = new RandomAccessFile(file2, "rw").getChannel();
-            ByteBuffer buffer = ByteBuffer.allocate(PAGE_SIZE);
-            while (-1 != (channel1.read(buffer))){
-                buffer.flip();
-                channel2.write(buffer);
-                buffer.clear();
-            }
-        }
-    }
 
-    private static void dataCarry2(String path,String middle)throws IOException{
-        for (int i=1;i<=10;i++){
-            String file1 = path+"/"+i+".txt";
-            String file2 = middle+"/"+i+".txt";
-            logger.info(file1);
-            FileChannel channel1 = new RandomAccessFile(file1, "rw").getChannel();
-            ByteBuffer buffer = ByteBuffer.allocate(PAGE_SIZE);
-            int num = 0;
-            while (-1 != (channel1.read(buffer))){
-                buffer.flip();
-                MappedByteBuffer buffer2 = new RandomAccessFile(file2, "rw").getChannel()
-                        .map(FileChannel.MapMode.READ_WRITE,num*PAGE_SIZE,(long) buffer.limit());
-                buffer2.put(buffer);
-                buffer.clear();
-                num++;
-            }
-        }
-    }
-
-    private static ByteBuffer getData( String start, String end)throws Exception{
-        logger.info("get into the getData");
-        LogStore logStore = LogStore.getInstance();
-        int statId = Integer.parseInt(start);
-        int endId = Integer.parseInt(end);
-        logStore.init(statId,endId);
-        long startConsumer = System.currentTimeMillis();
-        for (int i=0;i<1;i++){
-            new ProduceThread(logStore,Constants.MIDDLE_HOME).start();
-        }
-        logStore.parseBytes(Integer.parseInt(start),Integer.parseInt(end));
-        logger.info("finish the parse");
-        ByteBuffer buffer = logStore.parse();
-        long endConsumer = System.currentTimeMillis();
-        logger.info("the cost time: "+(endConsumer-startConsumer));
-        logger.info("buffer length:"+buffer.array().length);
-
-        return buffer;
-    }
+//    private static ByteBuffer getData( String start, String end)throws Exception{
+//        logger.info("get into the getData");
+//        LogStore logStore = LogStore.getInstance();
+//        int statId = Integer.parseInt(start);
+//        int endId = Integer.parseInt(end);
+//        logStore.init(statId,endId);
+//        long startConsumer = System.currentTimeMillis();
+//        for (int i=0;i<1;i++){
+//            new ProduceThread(logStore,Constants.MIDDLE_HOME).start();
+//        }
+//        logStore.parseBytes(Integer.parseInt(start),Integer.parseInt(end));
+//        logger.info("finish the parse");
+//        ByteBuffer buffer = logStore.parse();
+//        long endConsumer = System.currentTimeMillis();
+//        logger.info("the cost time: "+(endConsumer-startConsumer));
+//        logger.info("buffer length:"+buffer.array().length);
+//
+//        return buffer;
+//    }
 }

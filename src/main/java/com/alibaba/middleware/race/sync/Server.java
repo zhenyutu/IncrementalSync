@@ -54,13 +54,11 @@ public class Server {
         // 第四个参数是end pk Id
         logger.info("end:" + args[3]);
 
-        dataCarry(logger,Constants.DATA_HOME,Constants.MIDDLE_HOME);
-
         getData(logger,args[2],args[3]);
 
         logger.info("start the server");
-//        server.startServer(5527,args[2],args[3]);
-        server.startServer(5527);
+        server.startServer(5527,args[2],args[3]);
+//        server.startServer(5527);
 //        server.startServer(5527,args[0],args[1],args[2],args[3]);
 //        server.startServer(5527,"middleware5","student","100","200");
     }
@@ -81,7 +79,7 @@ public class Server {
     }
 
 
-    private void startServer(int port) throws InterruptedException {
+    private void startServer(int port, final String start, final String end) throws InterruptedException {
         EventLoopGroup bossGroup = new NioEventLoopGroup();
         EventLoopGroup workerGroup = new NioEventLoopGroup();
         try {
@@ -93,7 +91,7 @@ public class Server {
                     @Override
                     public void initChannel(SocketChannel ch) throws Exception {
                         // 注册handler
-                        ch.pipeline().addLast(new ServerDemoInHandler());
+                        ch.pipeline().addLast(new ServerDemoInHandler(start,end));
                         ch.pipeline().addLast("encoder", new LengthFieldPrepender(4, false));
                     }
                 })
@@ -109,22 +107,6 @@ public class Server {
         }
     }
 
-    private static void dataCarry(Logger logger,String path,String middle)throws IOException{
-        for (int i=1;i<=10;i++){
-            String file1 = path+"/"+i+".txt";
-            String file2 = middle+"/"+i+".txt";
-            logger.info(file1);
-            FileChannel channel1 = new RandomAccessFile(file1, "rw").getChannel();
-            FileChannel channel2 = new RandomAccessFile(file2, "rw").getChannel();
-            ByteBuffer buffer = ByteBuffer.allocate(PAGE_SIZE);
-            while (-1 != (channel1.read(buffer))){
-                buffer.flip();
-                channel2.write(buffer);
-                buffer.clear();
-            }
-        }
-    }
-
     private static void getData(Logger logger, String start, String end)throws Exception{
         logger.info("get into the getData");
         LogStore logStore = LogStore.getInstance();
@@ -133,7 +115,7 @@ public class Server {
         logStore.init(statId,endId);
         long startConsumer = System.currentTimeMillis();
         for (int i=0;i<1;i++){
-            new ProduceThread(logStore,Constants.MIDDLE_HOME).start();
+            new ProduceThread(logStore,Constants.DATA_HOME).start();
         }
         logStore.parseBytes(Integer.parseInt(start),Integer.parseInt(end));
         logger.info("finish the solve");
