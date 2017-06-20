@@ -51,7 +51,7 @@ public class LogStore {
     private boolean running = false;
     private int position = 0;
 
-    private Map<Long,Long> addMap = new HashMap<>(10000);
+    private Map<Long,Long> addMap = new HashMap<>(550000);
     private boolean[] finishArr = null;
 
     private byte[] empty_28 = new byte[28];
@@ -124,28 +124,31 @@ public class LogStore {
         }
     }
 
-    private byte[] parseBytesFromQueue(byte[] bytes,byte[] lastLogs,int start,int end){
-        byte[] logs = null;
+    private byte[] parseBytesFromQueue(byte[] bytes,byte[] lastLogs,int start,int end) throws IOException{
+        byte[] logs ;
+        byte[] newLastLogs;
 
         if (lastLogs != null){
-            logs = new byte[lastLogs.length+bytes.length];
-            System.arraycopy(lastLogs, 0, logs, 0, lastLogs.length);
-            System.arraycopy(bytes, 0, logs, lastLogs.length, bytes.length);
-        }else
+            int firstEnd = findNextEnt(bytes,-2,END_FLAG);
+            int length = firstEnd+1;
+            byte[] log = new byte[length+lastLogs.length];
+            System.arraycopy(lastLogs, 0, log, 0, lastLogs.length);
+            System.arraycopy(bytes, 0, log, lastLogs.length, length);
+            operate(log,-2,log.length-1,start,end);
+
             logs = bytes;
-        byte[] newLastLogs = null;
-        try {
-            newLastLogs = getLogFromBytes(logs, start, end);
-        }catch (IOException e){
-            logger.info("error in the parseBytesFromQueue");
-            e.printStackTrace();
+            newLastLogs = getLogFromBytes(logs,firstEnd, start, end);
+
+        }else{
+            logs = bytes;
+            newLastLogs = getLogFromBytes(logs,0, start, end);
         }
 
         return newLastLogs;
     }
 
-    private byte[] getLogFromBytes(byte[] logs,int startId,int endId) throws IOException{
-        int nextLogEnd,logEnd = 0,lastLogEnd,start = logs.length-1;
+    private byte[] getLogFromBytes(byte[] logs,int logEnd,int startId,int endId) throws IOException{
+        int nextLogEnd,lastLogEnd,start = logs.length-1;
         byte[] lastLogs = null;
         if (!(logs[start]==END_FLAG)){
             lastLogEnd =  findpreEnt(logs,start,END_FLAG);
