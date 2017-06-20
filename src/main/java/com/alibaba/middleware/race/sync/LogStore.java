@@ -43,7 +43,6 @@ public class LogStore {
     private static final byte UPDATE_FLAG = (byte)85;
     private static final byte DELETE_FLAG = (byte)68;
 
-    private Map<Integer,MappedByteBuffer> bufferMap = new HashMap<>();
     private ArrayBlockingQueue<byte[]> bufferQueue = new ArrayBlockingQueue<>(4);
     private Map<Integer,Long> filePositionMap = new HashMap<>();
     private Map<Integer,FileChannel> fileChannelMap = new HashMap<>();
@@ -58,8 +57,11 @@ public class LogStore {
     private byte[] empty_28 = new byte[28];
     private byte[] empty_3 = new byte[3];
 
+    private ByteBuffer resultBuffer = null;
+
     public void init(int start,int end)throws Exception{
         logger.info("get into the init");
+        resultBuffer = ByteBuffer.allocate(PAGE_COUNT*28);
         finishArr = new boolean[end-start+1];
     }
 
@@ -122,31 +124,28 @@ public class LogStore {
         }
     }
 
-    private byte[] parseBytesFromQueue(byte[] bytes,byte[] lastLogs,int start,int end) throws IOException{
-        byte[] logs ;
-        byte[] newLastLogs;
+    private byte[] parseBytesFromQueue(byte[] bytes,byte[] lastLogs,int start,int end){
+        byte[] logs = null;
 
         if (lastLogs != null){
-            int firstEnd = findNextEnt(bytes,0,END_FLAG);
-            int length = firstEnd+1;
-            byte[] log = new byte[length+lastLogs.length];
-            System.arraycopy(lastLogs, 0, log, 0, lastLogs.length);
-            System.arraycopy(bytes, 0, log, lastLogs.length, length);
-            operate(log,-2,log.length-1,start,end);
-
+            logs = new byte[lastLogs.length+bytes.length];
+            System.arraycopy(lastLogs, 0, logs, 0, lastLogs.length);
+            System.arraycopy(bytes, 0, logs, lastLogs.length, bytes.length);
+        }else
             logs = bytes;
-            newLastLogs = getLogFromBytes(logs,firstEnd+1, start, end);
-
-        }else{
-            logs = bytes;
-            newLastLogs = getLogFromBytes(logs,0, start, end);
+        byte[] newLastLogs = null;
+        try {
+            newLastLogs = getLogFromBytes(logs, start, end);
+        }catch (IOException e){
+            logger.info("error in the parseBytesFromQueue");
+            e.printStackTrace();
         }
 
         return newLastLogs;
     }
 
-    private byte[] getLogFromBytes(byte[] logs,int logEnd,int startId,int endId) throws IOException{
-        int nextLogEnd,lastLogEnd,start = logs.length-1;
+    private byte[] getLogFromBytes(byte[] logs,int startId,int endId) throws IOException{
+        int nextLogEnd,logEnd = 0,lastLogEnd,start = logs.length-1;
         byte[] lastLogs = null;
         if (!(logs[start]==END_FLAG)){
             lastLogEnd =  findpreEnt(logs,start,END_FLAG);
@@ -245,15 +244,7 @@ public class LogStore {
         byte[] idBytes = findSingleStr(logs,start,SPLITE_FLAG,3);
         long id = Long.parseLong(new String(idBytes));
 
-        int count = (int)id/PAGE_COUNT;
-        MappedByteBuffer buffer = bufferMap.get(count);
-        if (buffer == null){
-            File file = new File(Constants.MIDDLE_HOME + "/" + count + ".txt");
-            logger.info("middle file : "+file.getPath());
-            buffer = new RandomAccessFile(file, "rw").getChannel().map(FileChannel.MapMode.READ_WRITE, 0, PAGE_COUNT*28);
-            bufferMap.put(count,buffer);
-        }
-        ByteBuffer tmpBuffer = (ByteBuffer) buffer.position((int)(id%PAGE_COUNT)*28);
+        ByteBuffer tmpBuffer = (ByteBuffer) resultBuffer.position((int)id*28);
         tmpBuffer.putLong(id);
         for (int n = 0;;n=n+2){
             if (position+2<end){
@@ -269,21 +260,13 @@ public class LogStore {
     }
 
     private void updateTag(long id,byte tag,byte[] bytes)throws IOException{
-        int count = (int)id/PAGE_COUNT;
-        MappedByteBuffer buffer = bufferMap.get(count);
-        if (buffer == null){
-            File file = new File(Constants.MIDDLE_HOME + "/" + count + ".txt");
-            logger.info("middle file : "+file.getPath());
-            buffer = new RandomAccessFile(file, "rw").getChannel().map(FileChannel.MapMode.READ_WRITE, 0, PAGE_COUNT*28);
-            bufferMap.put(count,buffer);
-        }
         switch (tag){
             case FIRST_FLAG:
-                ByteBuffer buffer1 = (ByteBuffer) buffer.position((int)(id%PAGE_COUNT)*28+8);
+                ByteBuffer buffer1 = (ByteBuffer) resultBuffer.position((int)id*28+8);
                 buffer1.put(bytes);
                 break;
             case LAST_FLAG:
-                ByteBuffer buffer2 = (ByteBuffer) buffer.position((int)(id%PAGE_COUNT)*28+11);
+                ByteBuffer buffer2 = (ByteBuffer) resultBuffer.position((int)id*28+11);
                 if (bytes.length==6){
                     buffer2.put(bytes);
                 }else {
@@ -292,15 +275,15 @@ public class LogStore {
                 }
                 break;
             case SEX_FLAG:
-                ByteBuffer buffer3 = (ByteBuffer) buffer.position((int)(id%PAGE_COUNT)*28+17);
+                ByteBuffer buffer3 = (ByteBuffer) resultBuffer.position((int)id*28+17);
                 buffer3.put(bytes);
                 break;
             case SCORE1_FLAG:
-                ByteBuffer buffer4 = (ByteBuffer) buffer.position((int)(id%PAGE_COUNT)*28+20);
+                ByteBuffer buffer4 = (ByteBuffer) resultBuffer.position((int)id*28+20);
                 buffer4.putInt(Integer.parseInt(new String(bytes)));
                 break;
             case SCORE2_FLAG:
-                ByteBuffer buffer5 = (ByteBuffer) buffer.position((int)(id%PAGE_COUNT)*28+24);
+                ByteBuffer buffer5 = (ByteBuffer) resultBuffer.position((int)id*28+24);
                 buffer5.putInt(Integer.parseInt(new String(bytes)));
                 break;
         }
@@ -354,12 +337,9 @@ public class LogStore {
         long lastId = Long.parseLong(new String(findSingleStr(logs,start,SPLITE_FLAG,2)));
 
         if (!addMap.keySet().contains(lastId)){
-            int count = (int)lastId/PAGE_COUNT;
-            MappedByteBuffer buffer = bufferMap.get(count);
-            if (!(buffer == null)){
-                ByteBuffer buffer1 = (ByteBuffer) buffer.position((int)(lastId%PAGE_COUNT)*28);
-                buffer1.put(empty_28);
-            }
+            ByteBuffer buffer1 = (ByteBuffer) resultBuffer.position((int)lastId*28);
+            buffer1.put(empty_28);
+
         }else {
             addMap.remove(lastId);
         }
@@ -382,9 +362,7 @@ public class LogStore {
                 } else {
                     index = (long)i;
                 }
-                int count = (int)index/PAGE_COUNT;
-                ByteBuffer buffer = (ByteBuffer) bufferMap.get(count).position((int)(index%PAGE_COUNT)*28);
-
+                ByteBuffer buffer = (ByteBuffer) resultBuffer.position((int)index*28);
                 id = buffer.getLong();
                 if (id!=0){
                     result.put(String.valueOf(i).getBytes());
@@ -426,11 +404,11 @@ public class LogStore {
 
     public static void main(String[] args) throws Exception{
         LogStore logStore = getInstance();
-        int start = 100;
-        int end = 200;
+        int start = 100000;
+        int end = 2000000;
 
         logStore.init(start,end);
-        String path = "/home/tuzhenyu/tmp/canal_data/1";
+        String path = "/home/tuzhenyu/tmp/canal_data/2";
 
         long startConsumer = System.currentTimeMillis();
         for (int i=0;i<3;i++){
