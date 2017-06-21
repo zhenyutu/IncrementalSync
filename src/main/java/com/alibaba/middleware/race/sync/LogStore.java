@@ -3,14 +3,15 @@ package com.alibaba.middleware.race.sync;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.File;
 import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.nio.ByteBuffer;
 import java.nio.MappedByteBuffer;
 import java.nio.channels.FileChannel;
 import java.util.*;
-import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.LinkedBlockingQueue;
 
 /**
  * Created by tuzhenyu on 17-6-7.
@@ -42,18 +43,20 @@ public class LogStore {
     private static final byte UPDATE_FLAG = (byte)85;
     private static final byte DELETE_FLAG = (byte)68;
 
-    private ArrayBlockingQueue<byte[]> bufferQueue = new ArrayBlockingQueue<>(4);
-    private ArrayBlockingQueue<byte[]> logQueue = new ArrayBlockingQueue<>(10);
+    private LinkedBlockingQueue<byte[]> bufferQueue = new LinkedBlockingQueue<>();
+    private LinkedBlockingQueue<byte[]> logQueue = new LinkedBlockingQueue<>();
 
 
     private Map<Integer,Long> filePositionMap = new HashMap<>();
     private Map<Integer,FileChannel> fileChannelMap = new HashMap<>();
+
     private volatile int fileNum = 1;
+    private final static int THREAD_NUM = 5;
 
     private volatile boolean running = false;
-    private volatile Map<Long,Long> addMap = new HashMap<>(550000);
     private volatile boolean[] finishArr = null;
-    private volatile ByteBuffer resultBuffer = null;
+    private Map<Long,Long> addMap = new ConcurrentHashMap<>(550000);
+    private ByteBuffer resultBuffer = null;
 
     private byte[] empty_28 = new byte[28];
     private byte[] empty_3 = new byte[3];
@@ -119,7 +122,7 @@ public class LogStore {
                 num++;
             }
             if(num>9){
-                for (int i=0;i<5;i++){
+                for (int i=0;i<2*THREAD_NUM;i++){
                     byte[] tmp = new byte[1];
                     logQueue.put(tmp);
                 }
@@ -177,14 +180,15 @@ public class LogStore {
     public void parseBytes(int startId,int endId)throws Exception{
         while (true){
             byte[] log = logQueue.take();
-            if (log.length>1)
+            if (log.length>1){
                 operate(log,startId,endId);
+            }
             else
                 break;
         }
     }
 
-    private void operate(byte[] log,int startId,int endId)throws IOException{
+    private void operate(byte[] log,int startId,int endId)throws Exception{
         int start = findFirstByte(log,0,SPLITE_FLAG,4);
         byte operate = log[start+1];
         start = findFirstByte(log,start,SPLITE_FLAG,1);
@@ -299,7 +303,7 @@ public class LogStore {
             e.printStackTrace();
         }
     }
-    private void updateOperate(byte[] logs,int start,int startId,int endId)throws IOException{
+    private void updateOperate(byte[] logs,int start,int startId,int endId)throws Exception{
         int idStart = findFirstByte(logs,start,SPLITE_FLAG,1);
         int idEnd0 = findFirstByte(logs,idStart,SPLITE_FLAG,1);
         int idEnd = findFirstByte(logs,idEnd0,SPLITE_FLAG,1);
@@ -311,7 +315,8 @@ public class LogStore {
         byte[] idBytes2 = new byte[idEnd-idEnd0-1];
         System.arraycopy(logs,idEnd0+1,idBytes2,0,idEnd-idEnd0-1);
         long id = Long.parseLong(new String(idBytes2));
-
+        if (lastId>PAGE_COUNT&&!addMap.keySet().contains(lastId))
+            System.out.println("");
 
         if (lastId==id){
             if (!addMap.keySet().contains(lastId)){
@@ -456,15 +461,20 @@ public class LogStore {
         logStore.init(start,end);
         String path = "/home/tuzhenyu/tmp/canal_data/2";
 
+        CountDownLatch countDownLatch = new CountDownLatch(THREAD_NUM+2);
         long startConsumer = System.currentTimeMillis();
-        for (int i=0;i<1;i++){
-            new ProduceThread(logStore,path)    .start();
-        }
-        new SpliteThread(logStore).start();
 
-//        for (int i=0;i<2;i++){
-//            new parseThread(logStore,start,end).start();
-//        }
+        for (int i=0;i<1;i++){
+            new ProduceThread(countDownLatch,logStore,path).start();
+        }
+
+        new SpliteThread(countDownLatch,logStore).start();
+
+        for (int i=0;i<THREAD_NUM;i++){
+            new parseThread(countDownLatch,logStore,start,end).start();
+        }
+
+        countDownLatch.await();
         logStore.parseBytes(start,end);
         System.out.println("finish the parse");
         ByteBuffer buffer = logStore.parse(start,end);
@@ -472,6 +482,4 @@ public class LogStore {
         long endConsumer = System.currentTimeMillis();
         System.out.println(endConsumer-startConsumer);
     }
-
-
 }
