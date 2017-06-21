@@ -117,7 +117,7 @@ public class Server {
         for (int i=0;i<1;i++){
             new ProduceThread(logStore,Constants.DATA_HOME).start();
         }
-        logStore.parseBytes(Integer.parseInt(start),Integer.parseInt(end));
+//        logStore.parseBytes(Integer.parseInt(start),Integer.parseInt(end));
         logger.info("finish the solve");
         long endConsumer = System.currentTimeMillis();
         logger.info("the cost time: "+(endConsumer-startConsumer));
