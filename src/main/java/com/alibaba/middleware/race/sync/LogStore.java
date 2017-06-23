@@ -9,9 +9,7 @@ import java.nio.ByteBuffer;
 import java.nio.MappedByteBuffer;
 import java.nio.channels.FileChannel;
 import java.util.*;
-import java.util.concurrent.ArrayBlockingQueue;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.*;
 
 /**
  * Created by tuzhenyu on 17-6-7.
@@ -44,14 +42,12 @@ public class LogStore {
     private static final byte DELETE_FLAG = (byte)68;
 
     private ArrayBlockingQueue<byte[]> bufferQueue = new ArrayBlockingQueue<>(4);
-    private ArrayBlockingQueue<byte[]> logQueue = new ArrayBlockingQueue<>(1000);
-
 
     private Map<Integer,Long> filePositionMap = new HashMap<>();
     private Map<Integer,FileChannel> fileChannelMap = new HashMap<>();
 
     private volatile int fileNum = 1;
-    private final static int THREAD_NUM = 5;
+    private ExecutorService exe = null;
 
     private volatile boolean running = false;
     private volatile boolean[] finishArr = null;
@@ -65,6 +61,7 @@ public class LogStore {
         logger.info("get into the init");
         resultBuffer = ByteBuffer.allocate(PAGE_COUNT*28);
         finishArr = new boolean[end-start+1];
+        exe = Executors.newFixedThreadPool(16);
     }
 
     public void pullBytesFormFile(String path) throws Exception {
@@ -122,6 +119,7 @@ public class LogStore {
                 num++;
             }
             if(num>9){
+                exe.shutdown();
                 break;
             }
         }
@@ -137,7 +135,7 @@ public class LogStore {
             byte[] log = new byte[length+lastLogs.length];
             System.arraycopy(lastLogs, 0, log, 0, lastLogs.length);
             System.arraycopy(bytes, 0, log, lastLogs.length, length);
-            operate(log,startId,endId);
+            exe.execute(new ParseThread(log,startId,endId));
 
             logs = bytes;
             newLastLogs = getLogFromBytes(logs,firstEnd,startId,endId);
@@ -165,7 +163,7 @@ public class LogStore {
                 break;
             byte[] log = new byte[nextLogEnd-logEnd];
             System.arraycopy(logs, logEnd+1, log, 0, nextLogEnd-logEnd);
-            operate(log,startId,endId);
+            exe.execute(new ParseThread(log,startId,endId));
 
             logEnd = nextLogEnd;
         }
@@ -173,7 +171,7 @@ public class LogStore {
         return lastLogs;
     }
 
-    private void operate(byte[] log,int startId,int endId)throws Exception{
+    public void operate(byte[] log,int startId,int endId)throws Exception{
         int start = findFirstByte(log,0,SPLITE_FLAG,4);
         byte operate = log[start+1];
         start = findFirstByte(log,start,SPLITE_FLAG,1);
@@ -440,11 +438,11 @@ public class LogStore {
 
     public static void main(String[] args) throws Exception{
         LogStore logStore = getInstance();
-        int start = 100000;
-        int end = 2000000;
+        int start = 100;
+        int end = 200;
 
         logStore.init(start,end);
-        String path = "/home/tuzhenyu/tmp/canal_data/2";
+        String path = "/home/tuzhenyu/tmp/canal_data/1";
 
         long startConsumer = System.currentTimeMillis();
 
