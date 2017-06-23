@@ -115,9 +115,9 @@ public class Server {
         logStore.init(statId,endId);
         long startConsumer = System.currentTimeMillis();
         for (int i=0;i<1;i++){
-//            new ProduceThread(logStore,Constants.DATA_HOME).start();
+            new ProduceThread(logStore,Constants.DATA_HOME).start();
         }
-//        logStore.parseBytes(Integer.parseInt(start),Integer.parseInt(end));
+        logStore.spliteBytes(statId,statId);
         logger.info("finish the solve");
         long endConsumer = System.currentTimeMillis();
         logger.info("the cost time: "+(endConsumer-startConsumer));
