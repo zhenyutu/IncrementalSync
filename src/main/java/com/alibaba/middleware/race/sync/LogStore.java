@@ -2,7 +2,6 @@ package com.alibaba.middleware.race.sync;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import sun.rmi.runtime.Log;
 
 import java.io.IOException;
 import java.io.RandomAccessFile;
@@ -49,7 +48,7 @@ public class LogStore {
     private Map<Integer, FileChannel> fileChannelMap = new HashMap<>();
 
     private volatile int fileNum = 1;
-    private ExecutorService exe = null;
+    private ExecutorService executor = null;
 
     private volatile boolean running = false;
     private volatile boolean[] finishArr = null;
@@ -77,7 +76,7 @@ public class LogStore {
         logger.info("get into the init");
         resultBuffer = ByteBuffer.allocate(PAGE_COUNT * 28);
         finishArr = new boolean[end - start + 1];
-        exe = Executors.newFixedThreadPool(16);
+        executor = Executors.newFixedThreadPool(16);
     }
 
     public void pullBytesFormFile(String path) throws Exception {
@@ -134,7 +133,7 @@ public class LogStore {
                 num++;
             }
             if (num > 9) {
-                exe.shutdown();
+                executor.shutdown();
                 break;
             }
         }
@@ -150,7 +149,7 @@ public class LogStore {
             byte[] log = new byte[length + lastLogs.length];
             System.arraycopy(lastLogs, 0, log, 0, lastLogs.length);
             System.arraycopy(bytes, 0, log, lastLogs.length, length);
-            exe.execute(new ParseThread(log, startId, endId));
+            executor.execute(new ParseThread(log, startId, endId));
 
             logs = bytes;
             newLastLogs = getLogFromBytes(logs, firstEnd, startId, endId);
@@ -178,7 +177,7 @@ public class LogStore {
                 break;
             byte[] log = new byte[nextLogEnd - logEnd];
             System.arraycopy(logs, logEnd + 1, log, 0, nextLogEnd - logEnd);
-            exe.execute(new ParseThread(log, startId, endId));
+            executor.execute(new ParseThread(log, startId, endId));
 
             logEnd = nextLogEnd;
         }
