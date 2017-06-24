@@ -2,6 +2,7 @@ package com.alibaba.middleware.race.sync;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import sun.rmi.runtime.Log;
 
 import java.io.IOException;
 import java.io.RandomAccessFile;
@@ -23,15 +24,10 @@ import java.util.concurrent.Executors;
 public class LogStore {
     private static Logger logger = LoggerFactory.getLogger(Server.class);
 
-    private static final LogStore INSTANCE = new LogStore();
-
-    public static LogStore getInstance() {
-        return INSTANCE;
-    }
+    private static volatile LogStore INSTANCE;
 
     private static final int PAGE_SIZE = 20 * 1024 * 1024;
     private static final int PAGE_COUNT = 10 * 1024 * 1024;
-
 
     private static final byte SPLITE_FLAG = (byte) 124;
     private static final byte END_FLAG = (byte) 10;
@@ -62,6 +58,20 @@ public class LogStore {
 
     private byte[] empty_28 = new byte[28];
     private byte[] empty_3 = new byte[3];
+
+    private LogStore() {
+    }
+
+    public static LogStore getInstance() {
+        if (INSTANCE == null) {
+            synchronized (LogStore.class) {
+                if (INSTANCE == null) {
+                    INSTANCE = new LogStore();
+                }
+            }
+        }
+        return INSTANCE;
+    }
 
     public void init(int start, int end) throws Exception {
         logger.info("get into the init");
@@ -112,8 +122,8 @@ public class LogStore {
         }
     }
 
-    public void spliteBytes(int startId, int endId) throws Exception {
-        logger.info("get into the spliteBytes");
+    public void splitBytes(int startId, int endId) throws Exception {
+        logger.info("get into the splitBytes");
         byte[] logs;
         byte[] lastLogs = null;
         int num = 0;
@@ -440,27 +450,5 @@ public class LogStore {
         String fileName = Constants.MIDDLE_HOME + "/RESULT.rs";
         FileChannel channel = new RandomAccessFile(fileName, "rw").getChannel();
         channel.write(buffer);
-    }
-
-
-    public static void main(String[] args) throws Exception {
-        LogStore logStore = getInstance();
-        int start = 100;
-        int end = 200;
-
-        logStore.init(start, end);
-        String path = "/home/tuzhenyu/tmp/canal_data/1";
-
-        long startConsumer = System.currentTimeMillis();
-
-        for (int i = 0; i < 1; i++) {
-            new ProduceThread(logStore, path).start();
-        }
-        logStore.spliteBytes(start, end);
-        System.out.println("finish the parse");
-        ByteBuffer buffer = logStore.parse(start, end);
-        logStore.flush(buffer);
-        long endConsumer = System.currentTimeMillis();
-        System.out.println(endConsumer - startConsumer);
     }
 }

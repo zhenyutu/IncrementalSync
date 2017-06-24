@@ -103,13 +103,17 @@ public class Server {
         int statId = Integer.parseInt(start);
         int endId = Integer.parseInt(end);
         logStore.init(statId, endId);
+
         long startConsumer = System.currentTimeMillis();
+
         for (int i = 0; i < 1; i++) {
             new ProduceThread(logStore, Constants.DATA_HOME).start();
         }
-        logStore.spliteBytes(statId, statId);
+        logStore.splitBytes(statId, statId);
         logger.info("finish the solve");
+
         long endConsumer = System.currentTimeMillis();
+
         logger.info("the cost time: " + (endConsumer - startConsumer));
     }
 }

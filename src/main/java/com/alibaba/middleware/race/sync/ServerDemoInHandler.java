@@ -17,9 +17,6 @@ import java.util.zip.Deflater;
 public class ServerDemoInHandler extends ChannelInboundHandlerAdapter {
     private String start;
     private String end;
-//    private ByteBuffer buffer;
-
-    private static final int PAGE_SIZE = 20 * 1024 * 1024;
 
     private static Logger logger = LoggerFactory.getLogger(Server.class);
 
@@ -27,10 +24,6 @@ public class ServerDemoInHandler extends ChannelInboundHandlerAdapter {
         this.start = start;
         this.end = end;
     }
-
-//    public ServerDemoInHandler(ByteBuffer buffer){
-//        this.buffer = buffer;
-//    }
 
     public static String getIPString(ChannelHandlerContext ctx) {
         String ipString = "";
@@ -58,30 +51,23 @@ public class ServerDemoInHandler extends ChannelInboundHandlerAdapter {
         logger.info("com.alibaba.middleware.race.sync.Client said:" + resultStr);
         logger.info("begin to run...");
 
-//        logger.info("start:"+start+"- end:"+end);
-//        dataCarry(Constants.DATA_HOME,Constants.MIDDLE_HOME);
-//
-//        ByteBuffer buffer = getData(start,end);
-
         LogStore logStore = LogStore.getInstance();
         ByteBuffer buffer = logStore.parse(Integer.parseInt(start), Integer.parseInt(end));
         byte[] data = new byte[buffer.limit()];
         buffer.get(data);
         logger.info("finish the parse");
-//        logger.warn(Arrays.toString(data));
+
         byte[] zipData = compress(data);
         logger.info("length:" + data.length + "-" + zipData.length);
 
         Channel channel = Server.getMap().get(clientIp);
         ByteBuf byteBuf = Unpooled.wrappedBuffer(zipData);
         channel.writeAndFlush(byteBuf).addListener(new ChannelFutureListener() {
-
             @Override
             public void operationComplete(ChannelFuture future) throws Exception {
                 logger.info("Server发送消息成功！");
             }
         });
-
     }
 
     @Override
@@ -89,6 +75,7 @@ public class ServerDemoInHandler extends ChannelInboundHandlerAdapter {
         ctx.flush();
     }
 
+    // TODO： who?
     public static byte[] compress(byte[] inputByte) throws IOException {
         int len = 0;
         Deflater defl = new Deflater();
@@ -107,25 +94,4 @@ public class ServerDemoInHandler extends ChannelInboundHandlerAdapter {
         }
         return bos.toByteArray();
     }
-
-
-//    private static ByteBuffer getData( String start, String end)throws Exception{
-//        logger.info("get into the getData");
-//        LogStore logStore = LogStore.getInstance();
-//        int statId = Integer.parseInt(start);
-//        int endId = Integer.parseInt(end);
-//        logStore.init(statId,endId);
-//        long startConsumer = System.currentTimeMillis();
-//        for (int i=0;i<1;i++){
-//            new ProduceThread(logStore,Constants.MIDDLE_HOME).start();
-//        }
-//        logStore.parseBytes(Integer.parseInt(start),Integer.parseInt(end));
-//        logger.info("finish the parse");
-//        ByteBuffer buffer = logStore.parse();
-//        long endConsumer = System.currentTimeMillis();
-//        logger.info("the cost time: "+(endConsumer-startConsumer));
-//        logger.info("buffer length:"+buffer.array().length);
-//
-//        return buffer;
-//    }
 }
