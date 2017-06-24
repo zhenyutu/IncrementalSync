@@ -79,14 +79,14 @@ public class LogStore {
         executor = Executors.newFixedThreadPool(16);
     }
 
-    public void pullBytesFormFile(String path) throws Exception {
-        logger.info("get into the pullBytesFormFile");
+    public void pullBytesFromFile(String path) throws Exception {
+        logger.info("get into the pullBytesFromFile");
 
         while (true) {
             MappedByteBuffer buffer;
             synchronized (this) {
-                if (running)
-                    break;
+                if (running) break;
+
                 FileChannel channel = fileChannelMap.get(fileNum);
                 if (channel == null) {
                     String file = path + "/" + fileNum + ".txt";
@@ -94,12 +94,18 @@ public class LogStore {
                     channel = new RandomAccessFile(file, "r").getChannel();
                     fileChannelMap.put(fileNum, channel);
                 }
+
                 Long filePosition = filePositionMap.get(fileNum);
                 if (filePosition == null) {
                     filePosition = 0L;
                     filePositionMap.put(fileNum, filePosition);
                 }
-                buffer = channel.map(FileChannel.MapMode.READ_ONLY, filePosition, Math.min(channel.size() - filePosition, PAGE_SIZE));
+
+                buffer = channel.map(
+                        FileChannel.MapMode.READ_ONLY,
+                        filePosition,
+                        Math.min(channel.size() - filePosition, PAGE_SIZE));
+
                 filePosition = filePosition + PAGE_SIZE;
                 filePositionMap.put(fileNum, filePosition);
 
@@ -200,7 +206,7 @@ public class LogStore {
                 deleteOperate(log, start, startId, endId);
                 break;
             default:
-                logger.info("error!");
+                logger.warn("error!");
         }
     }
 

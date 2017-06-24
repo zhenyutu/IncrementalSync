@@ -17,7 +17,7 @@ public class ProduceThread extends Thread {
     @Override
     public void run() {
         try {
-            logStore.pullBytesFormFile(path);
+            logStore.pullBytesFromFile(path);
             System.out.println(Thread.currentThread().getName() + "-produce finished");
         } catch (Exception e) {
             e.printStackTrace();
