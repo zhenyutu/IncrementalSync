@@ -1,26 +1,15 @@
 package com.alibaba.middleware.race.sync;
 
+import io.netty.buffer.ByteBuf;
+import io.netty.buffer.Unpooled;
+import io.netty.channel.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import io.netty.buffer.ByteBuf;
-import io.netty.buffer.Unpooled;
-import io.netty.channel.Channel;
-import io.netty.channel.ChannelFuture;
-import io.netty.channel.ChannelFutureListener;
-import io.netty.channel.ChannelHandlerContext;
-import io.netty.channel.ChannelInboundHandlerAdapter;
-
 import java.io.ByteArrayOutputStream;
-import java.io.File;
 import java.io.IOException;
-import java.io.RandomAccessFile;
 import java.nio.ByteBuffer;
-import java.nio.MappedByteBuffer;
-import java.nio.channels.FileChannel;
-import java.util.Arrays;
 import java.util.zip.Deflater;
-import java.util.zip.Inflater;
 
 /**
  * 处理client端的请求 Created by wanshao on 2017/5/25.
@@ -30,11 +19,11 @@ public class ServerDemoInHandler extends ChannelInboundHandlerAdapter {
     private String end;
 //    private ByteBuffer buffer;
 
-    private static final int PAGE_SIZE = 20*1024*1024;
+    private static final int PAGE_SIZE = 20 * 1024 * 1024;
 
     private static Logger logger = LoggerFactory.getLogger(Server.class);
 
-    public ServerDemoInHandler(String start,String end){
+    public ServerDemoInHandler(String start, String end) {
         this.start = start;
         this.end = end;
     }
@@ -55,7 +44,7 @@ public class ServerDemoInHandler extends ChannelInboundHandlerAdapter {
     public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
 
         String clientIp = getIPString(ctx);
-        logger.info("clientIp:"+clientIp);
+        logger.info("clientIp:" + clientIp);
         // 保存channel
         Server.getMap().put(clientIp, ctx.channel());
 
@@ -75,13 +64,13 @@ public class ServerDemoInHandler extends ChannelInboundHandlerAdapter {
 //        ByteBuffer buffer = getData(start,end);
 
         LogStore logStore = LogStore.getInstance();
-        ByteBuffer buffer = logStore.parse(Integer.parseInt(start),Integer.parseInt(end));
+        ByteBuffer buffer = logStore.parse(Integer.parseInt(start), Integer.parseInt(end));
         byte[] data = new byte[buffer.limit()];
         buffer.get(data);
         logger.info("finish the parse");
 //        logger.warn(Arrays.toString(data));
         byte[] zipData = compress(data);
-        logger.info("length:"+data.length+"-"+zipData.length);
+        logger.info("length:" + data.length + "-" + zipData.length);
 
         Channel channel = Server.getMap().get(clientIp);
         ByteBuf byteBuf = Unpooled.wrappedBuffer(zipData);

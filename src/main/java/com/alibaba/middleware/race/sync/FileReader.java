@@ -1,18 +1,12 @@
 package com.alibaba.middleware.race.sync;
 
-import java.io.FileInputStream;
-import java.io.IOException;
-import java.io.ByteArrayOutputStream;
-import java.util.Arrays;
-import java.util.zip.Deflater;
-import java.util.zip.Inflater;
-
 /**
  * Created by tuzhenyu on 17-6-8.
+ *
  * @author tuzhenyu
  */
 public class FileReader {
-    public static void main(String[] args) throws Exception{
+    public static void main(String[] args) throws Exception {
 //        try {
 //            FileInputStream in = new FileInputStream("/home/tuzhenyu/work/middlewareTester/middle/middleware5|student.txt");
 //            FileChannel fc = in.getChannel();

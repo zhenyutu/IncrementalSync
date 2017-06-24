@@ -9,7 +9,7 @@ public class ParseThread implements Runnable {
     private int startId;
     private int endId;
 
-    public ParseThread(byte[] log,int startId,int endId){
+    public ParseThread(byte[] log, int startId, int endId) {
         this.logStore = LogStore.getInstance();
         this.log = log;
         this.startId = startId;
@@ -19,8 +19,8 @@ public class ParseThread implements Runnable {
     @Override
     public void run() {
         try {
-            logStore.operate(log,startId,endId);
-        }catch (Exception e){
+            logStore.operate(log, startId, endId);
+        } catch (Exception e) {
             e.printStackTrace();
         }
     }

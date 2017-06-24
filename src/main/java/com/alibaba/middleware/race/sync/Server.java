@@ -1,33 +1,23 @@
 package com.alibaba.middleware.race.sync;
 
-import java.io.IOException;
-import java.io.RandomAccessFile;
-import java.nio.ByteBuffer;
-import java.nio.MappedByteBuffer;
-import java.nio.channels.FileChannel;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
-
+import io.netty.bootstrap.ServerBootstrap;
+import io.netty.channel.*;
+import io.netty.channel.nio.NioEventLoopGroup;
+import io.netty.channel.socket.SocketChannel;
+import io.netty.channel.socket.nio.NioServerSocketChannel;
 import io.netty.handler.codec.LengthFieldPrepender;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import io.netty.bootstrap.ServerBootstrap;
-import io.netty.channel.Channel;
-import io.netty.channel.ChannelFuture;
-import io.netty.channel.ChannelInitializer;
-import io.netty.channel.ChannelOption;
-import io.netty.channel.EventLoopGroup;
-import io.netty.channel.nio.NioEventLoopGroup;
-import io.netty.channel.socket.SocketChannel;
-import io.netty.channel.socket.nio.NioServerSocketChannel;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * 服务器类，负责push消息到client Created by wanshao on 2017/5/25.
  */
 public class Server {
 
-    private static final int PAGE_SIZE = 20*1024*1024;
+    private static final int PAGE_SIZE = 20 * 1024 * 1024;
 
     // 保存channel
     private static Map<String, Channel> map = new ConcurrentHashMap<String, Channel>();
@@ -54,10 +44,10 @@ public class Server {
         // 第四个参数是end pk Id
         logger.info("end:" + args[3]);
 
-        getData(logger,args[2],args[3]);
+        getData(logger, args[2], args[3]);
 
         logger.info("start the server");
-        server.startServer(5527,args[2],args[3]);
+        server.startServer(5527, args[2], args[3]);
 //        server.startServer(5527);
 //        server.startServer(5527,args[0],args[1],args[2],args[3]);
 //        server.startServer(5527,"middleware5","student","100","200");
@@ -85,18 +75,18 @@ public class Server {
         try {
             ServerBootstrap b = new ServerBootstrap();
             b.group(bossGroup, workerGroup)
-                .channel(NioServerSocketChannel.class)
-                .childHandler(new ChannelInitializer<SocketChannel>() {
+                    .channel(NioServerSocketChannel.class)
+                    .childHandler(new ChannelInitializer<SocketChannel>() {
 
-                    @Override
-                    public void initChannel(SocketChannel ch) throws Exception {
-                        // 注册handler
-                        ch.pipeline().addLast(new ServerDemoInHandler(start,end));
-                        ch.pipeline().addLast("encoder", new LengthFieldPrepender(4, false));
-                    }
-                })
-                .option(ChannelOption.SO_BACKLOG, 128)
-                .childOption(ChannelOption.SO_KEEPALIVE, true);
+                        @Override
+                        public void initChannel(SocketChannel ch) throws Exception {
+                            // 注册handler
+                            ch.pipeline().addLast(new ServerDemoInHandler(start, end));
+                            ch.pipeline().addLast("encoder", new LengthFieldPrepender(4, false));
+                        }
+                    })
+                    .option(ChannelOption.SO_BACKLOG, 128)
+                    .childOption(ChannelOption.SO_KEEPALIVE, true);
 
             ChannelFuture f = b.bind(port).sync();
 
@@ -107,19 +97,19 @@ public class Server {
         }
     }
 
-    private static void getData(Logger logger, String start, String end)throws Exception{
+    private static void getData(Logger logger, String start, String end) throws Exception {
         logger.info("get into the getData");
         LogStore logStore = LogStore.getInstance();
         int statId = Integer.parseInt(start);
         int endId = Integer.parseInt(end);
-        logStore.init(statId,endId);
+        logStore.init(statId, endId);
         long startConsumer = System.currentTimeMillis();
-        for (int i=0;i<1;i++){
-            new ProduceThread(logStore,Constants.DATA_HOME).start();
+        for (int i = 0; i < 1; i++) {
+            new ProduceThread(logStore, Constants.DATA_HOME).start();
         }
-        logStore.spliteBytes(statId,statId);
+        logStore.spliteBytes(statId, statId);
         logger.info("finish the solve");
         long endConsumer = System.currentTimeMillis();
-        logger.info("the cost time: "+(endConsumer-startConsumer));
+        logger.info("the cost time: " + (endConsumer - startConsumer));
     }
 }

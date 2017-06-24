@@ -1,21 +1,20 @@
 package com.alibaba.middleware.race.sync;
 
+import io.netty.buffer.ByteBuf;
+import io.netty.channel.ChannelHandlerContext;
+import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.channel.EventLoopGroup;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import io.netty.buffer.ByteBuf;
-import io.netty.channel.ChannelHandlerContext;
-import io.netty.channel.ChannelInboundHandlerAdapter;
-
-import java.io.*;
-import java.math.BigInteger;
-import java.security.MessageDigest;
-import java.util.Arrays;
+import java.io.ByteArrayOutputStream;
+import java.io.FileOutputStream;
+import java.io.IOException;
 import java.util.zip.Inflater;
 
 /**
  * Created by wanshao on 2017/5/25.
+ *
  * @author tuzhenyu
  */
 public class ClientDemoInHandler extends ChannelInboundHandlerAdapter {
@@ -23,7 +22,7 @@ public class ClientDemoInHandler extends ChannelInboundHandlerAdapter {
     private static Logger logger = LoggerFactory.getLogger(Client.class);
     private EventLoopGroup workerGroup;
 
-    public ClientDemoInHandler(EventLoopGroup workerGroup){
+    public ClientDemoInHandler(EventLoopGroup workerGroup) {
         this.workerGroup = workerGroup;
     }
 
@@ -36,7 +35,7 @@ public class ClientDemoInHandler extends ChannelInboundHandlerAdapter {
         byte[] result1 = new byte[result.readableBytes()];
         result.readBytes(result1);
         byte[] data = uncompress(result1);
-        logger.info("length:"+result1.length+"-"+data.length);
+        logger.info("length:" + result1.length + "-" + data.length);
         writeBytes(data);
         logger.info("finish the write result And close the ctx");
         result.release();
@@ -56,9 +55,9 @@ public class ClientDemoInHandler extends ChannelInboundHandlerAdapter {
         logger.info("finish write and flash");
     }
 
-    private void writeBytes(byte[] bytes) throws Exception{
+    private void writeBytes(byte[] bytes) throws Exception {
         logger.info("get into the writeBytes");
-        String fileName = Constants.RESULT_HOME+"/Result.rs";
+        String fileName = Constants.RESULT_HOME + "/Result.rs";
 
         FileOutputStream fos = new FileOutputStream(fileName);
         fos.write(bytes);

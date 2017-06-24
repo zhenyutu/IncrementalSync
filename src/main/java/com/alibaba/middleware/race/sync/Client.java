@@ -1,21 +1,21 @@
 package com.alibaba.middleware.race.sync;
 
-import io.netty.channel.*;
-import io.netty.handler.codec.LengthFieldBasedFrameDecoder;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import io.netty.bootstrap.Bootstrap;
+import io.netty.channel.*;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioSocketChannel;
+import io.netty.handler.codec.LengthFieldBasedFrameDecoder;
 import io.netty.handler.timeout.IdleStateHandler;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.net.InetSocketAddress;
 import java.util.concurrent.TimeUnit;
 
 /**
  * Created by wanshao on 2017/5/25.
+ *
  * @author tuzhenyu
  */
 public class Client {
@@ -32,10 +32,10 @@ public class Client {
         logger.info("Welcome");
         // 从args获取server端的ip
         ip = args[0];
-        logger.info("ip:"+ip);
+        logger.info("ip:" + ip);
 //        ip = "127.0.0.1";
         Client client = new Client();
-        client.connect(logger,ip, port);
+        client.connect(logger, ip, port);
 
     }
 
@@ -45,7 +45,7 @@ public class Client {
         System.setProperty("app.logging.level", Constants.LOG_LEVEL);
     }
 
-    public void connect(Logger logger,String host, int port) throws Exception {
+    public void connect(Logger logger, String host, int port) throws Exception {
         workerGroup = new NioEventLoopGroup();
         bootstrap = new Bootstrap();
 
@@ -61,11 +61,11 @@ public class Client {
                 ch.pipeline().addLast(new ClientDemoInHandler(workerGroup));
             }
         });
-        doConnect(logger,host,port);
+        doConnect(logger, host, port);
 
     }
 
-    private void doConnect(final Logger logger,final String host, final int port) {
+    private void doConnect(final Logger logger, final String host, final int port) {
 
         ChannelFuture future = bootstrap.connect(new InetSocketAddress(host, port));
 
@@ -73,10 +73,10 @@ public class Client {
             public void operationComplete(ChannelFuture f) throws Exception {
                 if (!f.isSuccess()) {
                     logger.info("Started Tcp Client Failed");
-                    f.channel().eventLoop().schedule( new Runnable() {
+                    f.channel().eventLoop().schedule(new Runnable() {
                         @Override
                         public void run() {
-                            doConnect(logger,host,port);
+                            doConnect(logger, host, port);
                         }
                     }, 200, TimeUnit.MILLISECONDS);
                 }
